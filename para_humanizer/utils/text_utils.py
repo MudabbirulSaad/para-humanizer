@@ -181,3 +181,165 @@ def chunk_text(text: str, max_chunk_size: int = 1000) -> List[str]:
         chunks.append(' '.join(current_chunk))
         
     return chunks
+
+def chunk_text_preserve_structure(text: str, max_chunk_size: int = 1000) -> List[Tuple[str, str, int]]:
+    """
+    Split text into chunks for processing while preserving structure.
+    
+    Args:
+        text: The text to split
+        max_chunk_size: Maximum size of each chunk in characters
+        
+    Returns:
+        List of tuples containing (chunk, structure_type, indentation_level)
+        where structure_type can be 'paragraph', 'bullet', 'heading', etc.
+    """
+    # For small texts, return as single chunk
+    if len(text) < max_chunk_size:
+        return [(text, 'text', 0)]
+    
+    chunks = []
+    lines = text.split('\n')
+    current_chunk = []
+    current_length = 0
+    
+    for line in lines:
+        # Preserve empty lines
+        if not line.strip():
+            if current_chunk:
+                # Add current chunk before the empty line
+                chunks.append(('\n'.join(current_chunk), 'text', 0))
+                current_chunk = []
+                current_length = 0
+            chunks.append(('', 'empty', 0))
+            continue
+        
+        # Detect line type and indentation
+        structure_type = 'text'
+        indentation = len(line) - len(line.lstrip())
+        
+        # Detect bullet points, numbered lists, etc.
+        stripped_line = line.strip()
+        if re.match(r'^[\*\-•]\s', stripped_line):
+            structure_type = 'bullet'
+        elif re.match(r'^\d+\.|\d+\)', stripped_line):
+            structure_type = 'numbered'
+        elif re.match(r'^#+\s', stripped_line):
+            structure_type = 'heading'
+        
+        # If the line is too long, we might need to split it
+        if len(line) > max_chunk_size:
+            import nltk
+            # Try to preserve the indentation and structure marker
+            prefix = line[:indentation]
+            if structure_type in ('bullet', 'numbered'):
+                # Extract the bullet or number
+                match = re.match(r'^(\s*)([*\-•]|\d+\.|\d+\))\s', line)
+                if match:
+                    prefix = match.group(0)
+                    indentation = len(prefix)
+            
+            # Split the content after the prefix
+            content = line[indentation:]
+            sentences = nltk.sent_tokenize(content)
+            
+            for i, sentence in enumerate(sentences):
+                # Add the prefix only to the first sentence
+                if i == 0:
+                    sentence = prefix + sentence
+                else:
+                    sentence = ' ' * indentation + sentence
+                
+                if current_length + len(sentence) > max_chunk_size and current_chunk:
+                    chunks.append(('\n'.join(current_chunk), structure_type, indentation))
+                    current_chunk = [sentence]
+                    current_length = len(sentence)
+                else:
+                    current_chunk.append(sentence)
+                    current_length += len(sentence)
+        else:
+            # Normal line processing
+            if current_length + len(line) > max_chunk_size and current_chunk:
+                chunks.append(('\n'.join(current_chunk), structure_type, indentation))
+                current_chunk = [line]
+                current_length = len(line)
+            else:
+                current_chunk.append(line)
+                current_length += len(line)
+    
+    # Add the last chunk if not empty
+    if current_chunk:
+        chunks.append(('\n'.join(current_chunk), 'text', 0))
+    
+    return chunks
+
+def preserve_structure_paraphrase(text: str, paraphrase_func, **kwargs) -> str:
+    """
+    Paraphrase text while preserving its original structure.
+    
+    Args:
+        text: The input text
+        paraphrase_func: Function to paraphrase individual chunks
+        **kwargs: Additional arguments to pass to the paraphrase function
+        
+    Returns:
+        Paraphrased text with preserved structure
+    """
+    # Extract structural elements (paragraphs, bullet points, etc.)
+    chunks = chunk_text_preserve_structure(text)
+    result = []
+    
+    for chunk_text, structure_type, indentation in chunks:
+        if not chunk_text.strip():
+            # Preserve empty lines exactly
+            result.append('')
+            continue
+            
+        # Process the chunk text
+        if structure_type in ('text', 'bullet', 'numbered', 'heading'):
+            # Paraphrase the content while preserving leading spaces/markers
+            if chunk_text:
+                # Split into lines to preserve line breaks
+                lines = chunk_text.split('\n')
+                processed_lines = []
+                
+                for line in lines:
+                    if not line.strip():
+                        processed_lines.append(line)
+                        continue
+                        
+                    # Extract leading whitespace and markers
+                    leading_space = re.match(r'^\s*', line).group(0)
+                    content_match = re.match(r'^(\s*)([*\-•]|\d+\.|\d+\)|\#+)\s', line)
+                    
+                    if content_match:
+                        # Line has a marker (bullet, number, heading)
+                        marker = content_match.group(0)
+                        content = line[len(marker):]
+                        
+                        # Paraphrase only the content
+                        if content.strip():
+                            paraphrased_content = paraphrase_func(content, **kwargs)
+                            processed_lines.append(marker + paraphrased_content)
+                        else:
+                            processed_lines.append(line)
+                    else:
+                        # Regular line with possible indentation
+                        content = line[len(leading_space):]
+                        
+                        if content.strip():
+                            paraphrased_content = paraphrase_func(content, **kwargs)
+                            processed_lines.append(leading_space + paraphrased_content)
+                        else:
+                            processed_lines.append(line)
+                
+                # Rejoin the lines
+                result.append('\n'.join(processed_lines))
+            else:
+                result.append(chunk_text)
+        else:
+            # For other structure types or empty lines, preserve as is
+            result.append(chunk_text)
+    
+    # Join all processed chunks
+    return '\n'.join(result)

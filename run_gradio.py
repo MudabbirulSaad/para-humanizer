@@ -40,7 +40,8 @@ def paraphrase_text(
     transformer_rate=0.0,
     humanize=True,
     humanize_intensity=0.5,
-    typo_rate=0.01
+    typo_rate=0.01,
+    preserve_structure=True
 ):
     """Process text with the paraphraser using provided parameters."""
     if not text.strip():
@@ -49,44 +50,67 @@ def paraphrase_text(
     try:
         # Get parameters either from intelligent selection or manual input
         if use_intelligent_params:
-            params = text_analyzer.analyze(text)
-            rule_based_rate = params["rule_based_rate"]
-            transformer_rate = params["transformer_rate"]
-            humanize_intensity = params["humanize_intensity"]
-            typo_rate = params["typo_rate"]
+            # Analyze text to determine optimal parameters
+            analysis_results = text_analyzer.analyze(text)
             
-            parameters_used = f"""
-**Parameters (automatically selected):**
-- Rule-based rate: {rule_based_rate:.2f}
-- Transformer rate: {transformer_rate:.2f}
-- Humanize intensity: {humanize_intensity:.2f}
-- Typo rate: {typo_rate:.2f}
-"""
+            # Map the returned keys from the analyze method to our expected keys
+            effective_rule_based = analysis_results["rule_based_rate"]
+            effective_transformer = analysis_results["transformer_rate"]
+            effective_humanize = True  # Default to True as the analyze method doesn't return this
+            effective_humanize_intensity = analysis_results["humanize_intensity"]
+            effective_typo_rate = analysis_results["typo_rate"]
+            
+            # Build parameters description
+            params_description = f"""
+            ### Intelligent Parameter Selection
+            Based on analysis of your text:
+            
+            * Word count: {len(text.split())}
+            
+            **Applied parameters:**
+            * Rule-based rate: {effective_rule_based:.2f}
+            * Transformer rate: {effective_transformer:.2f}
+            * Humanize: {"Yes" if effective_humanize else "No"}
+            * Humanize intensity: {effective_humanize_intensity:.2f}
+            * Typo rate: {effective_typo_rate:.3f}
+            * Preserve structure: {"Yes" if preserve_structure else "No"}
+            """
         else:
-            parameters_used = f"""
-**Parameters (manually selected):**
-- Rule-based rate: {rule_based_rate:.2f}
-- Transformer rate: {transformer_rate:.2f}
-- Humanize: {humanize}
-- Humanize intensity: {humanize_intensity:.2f}
-- Typo rate: {typo_rate:.2f}
-"""
+            # Use manually specified parameters
+            effective_rule_based = rule_based_rate
+            effective_transformer = transformer_rate
+            effective_humanize = humanize
+            effective_humanize_intensity = humanize_intensity
+            effective_typo_rate = typo_rate
+            
+            # Build parameters description
+            params_description = f"""
+            ### Manual Parameter Selection
+            
+            **Applied parameters:**
+            * Rule-based rate: {effective_rule_based:.2f}
+            * Transformer rate: {effective_transformer:.2f}
+            * Humanize: {"Yes" if effective_humanize else "No"}
+            * Humanize intensity: {effective_humanize_intensity:.2f}
+            * Typo rate: {effective_typo_rate:.3f}
+            * Preserve structure: {"Yes" if preserve_structure else "No"}
+            """
         
-        # Process the text
+        # Process the text with the paraphraser
         paraphrased = paraphraser_instance.paraphrase(
-            text=text,
-            rule_based_rate=rule_based_rate,
-            transformer_rate=transformer_rate,
-            humanize=humanize,
-            humanize_intensity=humanize_intensity,
-            typo_rate=typo_rate
+            text,
+            rule_based_rate=effective_rule_based,
+            transformer_rate=effective_transformer,
+            humanize=effective_humanize,
+            humanize_intensity=effective_humanize_intensity,
+            typo_rate=effective_typo_rate,
+            preserve_structure=preserve_structure
         )
         
-        return paraphrased, parameters_used
-    
+        return paraphrased, params_description
     except Exception as e:
-        logger.error(f"Error during paraphrasing: {e}")
-        return f"An error occurred during paraphrasing: {str(e)}", ""
+        logger.error(f"Error in paraphrasing: {e}", exc_info=True)
+        return f"Error: {str(e)}", "An error occurred during paraphrasing."
 
 def create_gradio_interface(paraphraser):
     """Create the Gradio web interface."""
@@ -169,25 +193,27 @@ def create_gradio_interface(paraphraser):
     with gr.Blocks(theme=theme, title="Para-Humanizer", css=custom_css) as interface:
         gr.Markdown(
             """
-            # 🔄 Para-Humanizer
+            # Para-Humanizer
             
-            ### An advanced text paraphrasing tool that creates human-like variations while preserving meaning
+            **A smart paraphrasing tool that makes text sound more human**
             
-            This interface provides access to all the powerful features of Para-Humanizer in an easy-to-use format.
+            This tool uses advanced NLP techniques to paraphrase text while preserving meaning and adding human-like variations. 
+            It combines rule-based rewriting, neural models, and randomized humanization.
             """
         )
         
+        # Main content rows
         with gr.Row():
             with gr.Column(scale=1):
-                gr.Markdown("## Input")
+                gr.Markdown("## Original Text")
                 input_text = gr.Textbox(
                     label="",
-                    placeholder="Enter text to paraphrase...",
+                    placeholder="Enter text here to paraphrase...",
                     lines=10
                 )
                 
                 with gr.Row():
-                    with gr.Column(scale=3):
+                    with gr.Column(scale=1):
                         use_intelligent = gr.Checkbox(
                             label="Use Intelligent Parameter Selection",
                             value=True,
@@ -196,6 +222,14 @@ def create_gradio_interface(paraphraser):
                     
                     with gr.Column(scale=2):
                         paraphrase_button = gr.Button("Paraphrase", variant="primary", size="lg")
+                
+                # Structure preservation option
+                with gr.Row():
+                    preserve_structure_check = gr.Checkbox(
+                        label="Preserve Document Structure",
+                        value=True,
+                        info="Maintain original formatting, bullet points, and paragraph structure"
+                    )
                 
                 # Advanced parameters (hidden by default when intelligent selection is enabled)
                 with gr.Accordion("Advanced Parameters", open=False) as advanced_params:
@@ -262,17 +296,18 @@ def create_gradio_interface(paraphraser):
             outputs=[advanced_params]
         )
         
-        # Set up the paraphrase function
+        # Set up the paraphrase function - make sure parameter order matches the paraphrase_text function
         paraphrase_button.click(
             fn=paraphrase_text,
             inputs=[
-                input_text, 
+                input_text,
                 use_intelligent,
-                rule_based, 
+                rule_based,
                 transformer,
                 humanize_check,
                 humanize_slider,
-                typo_slider
+                typo_slider,
+                preserve_structure_check
             ],
             outputs=[output_text, params_text]
         )

@@ -22,6 +22,7 @@ class ParaphraseRequest(BaseModel):
     typo_rate: float = Field(0.0, ge=0.0, le=1.0,
                             description="The rate of introducing typos (0.0 to 1.0)")
     no_parallel: bool = Field(False, description="Whether to disable parallel processing")
+    preserve_structure: bool = Field(True, description="Whether to preserve the original document structure (paragraphs, bullet points, formatting)")
     
     @field_validator('text')
     @classmethod

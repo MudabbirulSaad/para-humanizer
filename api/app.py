@@ -171,7 +171,8 @@ async def paraphrase(
             humanize=request.humanize,
             humanize_intensity=humanize_intensity,
             typo_rate=typo_rate,
-            no_parallel=request.no_parallel
+            no_parallel=request.no_parallel,
+            preserve_structure=request.preserve_structure
         )
         
         # Calculate token counts (approximation)

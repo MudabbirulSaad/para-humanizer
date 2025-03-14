@@ -10,7 +10,7 @@ import sys
 
 def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0, 
                     humanize=True, humanize_intensity=0.5, typo_rate=0.0,
-                    use_intelligent_params=False):
+                    use_intelligent_params=False, preserve_structure=True):
     """
     Send a paraphrase request to the API.
     
@@ -23,6 +23,7 @@ def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0,
         humanize_intensity: Intensity of humanization (0.0 to 1.0)
         typo_rate: Rate of introducing typos (0.0 to 1.0)
         use_intelligent_params: Whether to use intelligent parameter selection
+        preserve_structure: Whether to preserve the original document structure
         
     Returns:
         Paraphrased text if successful, None otherwise
@@ -46,7 +47,8 @@ def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0,
         "humanize": humanize,
         "humanize_intensity": humanize_intensity,
         "typo_rate": typo_rate,
-        "no_parallel": False
+        "no_parallel": False,
+        "preserve_structure": preserve_structure
     }
     
     try:
@@ -128,6 +130,11 @@ def main():
         default=0.0,
         help="Rate of introducing typos (0.0 to 1.0)"
     )
+    parser.add_argument(
+        "--preserve-structure", 
+        action="store_true",
+        help="Preserve the original document structure"
+    )
     
     args = parser.parse_args()
     
@@ -162,7 +169,8 @@ def main():
             humanize=args.humanize,
             humanize_intensity=args.humanize_intensity,
             typo_rate=args.typo_rate,
-            use_intelligent_params=False
+            use_intelligent_params=False,
+            preserve_structure=args.preserve_structure
         )
     
     # Print the result

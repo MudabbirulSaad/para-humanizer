@@ -57,14 +57,15 @@ def main():
     print(f"\nProcessing file: {input_file}")
     print(f"Input text length: {len(text)} characters")
     
-    # Paraphrase the text
+    # Paraphrase the text with structure preservation
     start_time = time.time()
     paraphrased = paraphraser.paraphrase(
         text,
         rule_based_rate=0.5,
         humanize=True,
         humanize_intensity=0.6,
-        typo_rate=0.01
+        typo_rate=0.01,
+        preserve_structure=True  # Enable structure preservation to maintain formatting
     )
     end_time = time.time()
     
@@ -72,12 +73,24 @@ def main():
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("=== ORIGINAL TEXT ===\n\n")
         f.write(text)
-        f.write("\n\n=== PARAPHRASED TEXT ===\n\n")
+        f.write("\n\n=== PARAPHRASED TEXT (WITH STRUCTURE PRESERVATION) ===\n\n")
         f.write(paraphrased)
+        
+        # Also add an example without structure preservation
+        f.write("\n\n=== PARAPHRASED TEXT (WITHOUT STRUCTURE PRESERVATION) ===\n\n")
+        no_structure_paraphrased = paraphraser.paraphrase(
+            text,
+            rule_based_rate=0.5,
+            humanize=True,
+            humanize_intensity=0.6,
+            typo_rate=0.01,
+            preserve_structure=False  # Disable structure preservation
+        )
+        f.write(no_structure_paraphrased)
     
     print(f"Paraphrasing completed in {end_time - start_time:.2f} seconds")
     print(f"Output saved to: {output_file}")
-    print("\nFirst 200 characters of paraphrased text:")
+    print("\nFirst 200 characters of paraphrased text (with structure preservation):")
     print(paraphrased[:200] + "...")
 
 
