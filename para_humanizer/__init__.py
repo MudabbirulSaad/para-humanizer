@@ -1,5 +1,6 @@
 """
-UltimateParaphraser - Advanced text paraphrasing tool
+Para-Humanizer - Advanced text paraphrasing tool with human-like qualities
 """
+import os
 
-__version__ = "1.0.0"
+__version__ = os.environ.get("PARA_HUMANIZER_VERSION", "0.1.0")

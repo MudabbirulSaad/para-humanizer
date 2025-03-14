@@ -326,7 +326,7 @@ Ocean currents, the continuous, directed movements of seawater, constitute one o
             
             **License:** MIT License
             
-            **Source Code:** [View on GitHub](https://github.com/yourusername/para-humanizer)
+            **Source Code:** [View on GitHub](https://github.com/mudabbirulsaad/para-humanizer)
             """
         )
     
