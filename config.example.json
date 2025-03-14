@@ -1,0 +1,27 @@
+{
+  "api": {
+    "version": "1.0.0",
+    "title": "Para-Humanizer API",
+    "description": "Professional API for text paraphrasing with humanization features",
+    "debug_mode": false
+  },
+  "cors": {
+    "allow_origins": ["https://yourdomain.com", "https://app.yourdomain.com"],
+    "allow_credentials": true,
+    "allow_methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type", "X-API-Key"]
+  },
+  "security": {
+    "api_keys_enabled": true,
+    "api_keys": ["your-api-key-1", "your-api-key-2"],
+    "rate_limit_enabled": true,
+    "rate_limit_requests": 60
+  },
+  "paraphraser": {
+    "use_gpu": true,
+    "batch_size": 2,
+    "hybrid_mode": true,
+    "transformer_disable": false,
+    "enable_learning": true
+  }
+}
