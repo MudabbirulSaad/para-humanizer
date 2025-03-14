@@ -1,22 +1,26 @@
 """
-Synonym Manager for UltimateParaphraser.
+Synonym Manager for Para-Humanizer.
 Command-line utility for managing the synonym library.
 """
 import argparse
 import json
 import os
 import sys
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 # Ensure we can import from our package
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from para_humanizer.utils.config import BLACKLIST_WORDS, COMMON_WORDS
+from para_humanizer.utils.config_manager import get_config_manager
 from para_humanizer.utils.synonym_loader import SynonymLibrary, DEFAULT_SYNONYM_PATH
 
-def load_synonym_library(filepath: Optional[str] = None) -> SynonymLibrary:
+def load_synonym_library(filepath: Optional[str] = None) -> Tuple[SynonymLibrary, str]:
     """Load the synonym library from the given filepath or default location."""
-    library = SynonymLibrary(BLACKLIST_WORDS, COMMON_WORDS)
+    config_manager = get_config_manager()
+    blacklist_words = config_manager.get_blacklist_words()
+    common_words = config_manager.get_set("default.common_words")
+    
+    library = SynonymLibrary(blacklist_words, common_words)
     path = filepath or DEFAULT_SYNONYM_PATH
     
     if not library.load_synonyms(path):
@@ -28,17 +32,19 @@ def load_synonym_library(filepath: Optional[str] = None) -> SynonymLibrary:
 def add_synonym(args):
     """Add a synonym to the library."""
     library, path = load_synonym_library(args.filepath)
+    config_manager = get_config_manager()
+    blacklist_words = config_manager.get_blacklist_words()
     
     # Convert words to lowercase for consistency
     word = args.word.lower()
     synonym = args.synonym.lower()
     
     # Check if the word or synonym is in the blacklist
-    if word in BLACKLIST_WORDS:
+    if word in blacklist_words:
         print(f"Error: The word '{word}' is in the blacklist and cannot be added.")
         return
         
-    if synonym in BLACKLIST_WORDS:
+    if synonym in blacklist_words:
         print(f"Error: The synonym '{synonym}' is in the blacklist and cannot be added.")
         return
     
@@ -134,7 +140,7 @@ def export_library(args):
     """Export the library to a JSON file."""
     library, _ = load_synonym_library(args.filepath)
     
-    output_path = args.output or "synonyms_export.json"
+    output_path = args.output_file
     
     if library.save_synonyms(output_path):
         print(f"Successfully exported synonym library to {output_path}")
@@ -143,12 +149,12 @@ def export_library(args):
 
 def import_library(args):
     """Import synonyms from a JSON file."""
-    if not os.path.exists(args.input):
-        print(f"Error: Input file {args.input} does not exist.")
+    if not os.path.exists(args.input_file):
+        print(f"Error: Input file {args.input_file} does not exist.")
         return
         
     try:
-        with open(args.input, 'r', encoding='utf-8') as f:
+        with open(args.input_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             
         # Load the current library
@@ -170,7 +176,9 @@ def import_library(args):
                 word = word.lower()
                 
                 # Skip blacklisted words
-                if word in BLACKLIST_WORDS:
+                config_manager = get_config_manager()
+                blacklist_words = config_manager.get_blacklist_words()
+                if word in blacklist_words:
                     continue
                     
                 if word not in library.synonyms[category]:
@@ -181,13 +189,13 @@ def import_library(args):
                 # Add new synonyms
                 for synonym in synonyms:
                     synonym = synonym.lower()
-                    if synonym not in BLACKLIST_WORDS and synonym not in library.synonyms[category][word]:
+                    if synonym not in blacklist_words and synonym not in library.synonyms[category][word]:
                         library.synonyms[category][word].append(synonym)
                         synonym_count += 1
         
         # Save the updated library
         if library.save_synonyms(path):
-            print(f"Successfully imported {word_count} words with {synonym_count} synonyms from {args.input}")
+            print(f"Successfully imported {word_count} words with {synonym_count} synonyms from {args.input_file}")
         else:
             print(f"Failed to save the updated synonym library")
             
@@ -196,13 +204,13 @@ def import_library(args):
 
 def create_new_library(args):
     """Create a new empty synonym library."""
-    output_path = args.output or DEFAULT_SYNONYM_PATH
+    output_path = args.output_file
     
     # Create basic structure
     data = {
         "meta": {
             "version": "1.0.0",
-            "description": "Curated synonym dictionary for UltimateParaphraser",
+            "description": "Curated synonym dictionary for Para-Humanizer",
             "date_updated": "2025-03-14"
         },
         "nouns": {},
@@ -226,56 +234,55 @@ def create_new_library(args):
 
 def main():
     """Main entry point for the synonym manager."""
-    parser = argparse.ArgumentParser(description="Manage the UltimateParaphraser synonym library")
+    parser = argparse.ArgumentParser(description="Manage the Para-Humanizer synonym library")
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
     
     # Add synonym command
     add_parser = subparsers.add_parser("add", help="Add a synonym to the library")
-    add_parser.add_argument("--word", required=True, help="The word to add a synonym for")
-    add_parser.add_argument("--synonym", required=True, help="The synonym to add")
-    add_parser.add_argument("--category", help="Optional category (e.g., nouns, verbs, adjectives)")
-    add_parser.add_argument("--filepath", help="Path to the synonym library JSON file")
+    add_parser.add_argument("word", help="Word to add a synonym for")
+    add_parser.add_argument("synonym", help="Synonym to add")
+    add_parser.add_argument("--category", help="Category for the word (e.g., technical_terms, verbs)")
+    add_parser.add_argument("--filepath", help="Path to synonym library JSON file")
     add_parser.set_defaults(func=add_synonym)
     
     # Remove synonym command
     remove_parser = subparsers.add_parser("remove", help="Remove a synonym from the library")
-    remove_parser.add_argument("--word", required=True, help="The word to remove synonyms for")
-    remove_parser.add_argument("--synonym", help="Specific synonym to remove (if not provided, remove all)")
-    remove_parser.add_argument("--filepath", help="Path to the synonym library JSON file")
+    remove_parser.add_argument("word", help="Word to remove a synonym from")
+    remove_parser.add_argument("synonym", help="Synonym to remove")
+    remove_parser.add_argument("--filepath", help="Path to synonym library JSON file")
     remove_parser.set_defaults(func=remove_synonym)
     
     # List synonyms command
-    list_parser = subparsers.add_parser("list", help="List synonyms in the library")
-    list_parser.add_argument("--word", help="The word to list synonyms for")
-    list_parser.add_argument("--category", help="The category to list words for")
-    list_parser.add_argument("--filepath", help="Path to the synonym library JSON file")
+    list_parser = subparsers.add_parser("list", help="List synonyms for a word")
+    list_parser.add_argument("word", nargs="?", help="Word to list synonyms for (optional)")
+    list_parser.add_argument("--category", help="Only list words from this category")
+    list_parser.add_argument("--filepath", help="Path to synonym library JSON file")
     list_parser.set_defaults(func=list_synonyms)
     
     # Export library command
-    export_parser = subparsers.add_parser("export", help="Export the library to a JSON file")
-    export_parser.add_argument("--output", help="Path to save the exported library")
-    export_parser.add_argument("--filepath", help="Path to the synonym library JSON file to export")
+    export_parser = subparsers.add_parser("export", help="Export the synonym library to a JSON file")
+    export_parser.add_argument("output_file", help="Path to output JSON file")
+    export_parser.add_argument("--filepath", help="Path to source synonym library JSON file")
     export_parser.set_defaults(func=export_library)
     
     # Import library command
     import_parser = subparsers.add_parser("import", help="Import synonyms from a JSON file")
-    import_parser.add_argument("--input", required=True, help="Path to the JSON file to import")
-    import_parser.add_argument("--filepath", help="Path to the synonym library to update")
+    import_parser.add_argument("input_file", help="Path to input JSON file")
+    import_parser.add_argument("--filepath", help="Path to target synonym library JSON file")
+    import_parser.add_argument("--replace", action="store_true", help="Replace existing library instead of merging")
     import_parser.set_defaults(func=import_library)
     
     # Create new library command
     create_parser = subparsers.add_parser("create", help="Create a new empty synonym library")
-    create_parser.add_argument("--output", help="Path to save the new library")
+    create_parser.add_argument("output_file", help="Path to output JSON file")
     create_parser.set_defaults(func=create_new_library)
     
-    # Parse arguments
     args = parser.parse_args()
     
-    if not hasattr(args, 'func'):
+    if not args.command:
         parser.print_help()
-        sys.exit(1)
+        return
         
-    # Execute the command
     args.func(args)
 
 if __name__ == "__main__":

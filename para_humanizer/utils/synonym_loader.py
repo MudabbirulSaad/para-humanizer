@@ -1,5 +1,5 @@
 """
-Synonym loader for UltimateParaphraser.
+Synonym loader for Para-Humanizer.
 Provides utilities for loading and accessing synonyms from a JSON library.
 """
 import json
@@ -190,7 +190,7 @@ class SynonymLibrary:
             output = {
                 "meta": {
                     "version": "1.1.0",
-                    "description": "Curated synonym dictionary for UltimateParaphraser",
+                    "description": "Curated synonym dictionary for Para-Humanizer",
                     "date_updated": "2025-03-14"
                 }
             }
@@ -218,8 +218,9 @@ DEFAULT_SYNONYM_PATH = os.path.join(
 )
 
 # Helper function to get an initialized synonym library
-def get_synonym_library(blacklist_words: Set[str], common_words: Set[str], 
-                        filepath: Optional[str] = None) -> SynonymLibrary:
+def get_synonym_library(blacklist_words: Optional[Set[str]] = None, 
+                       common_words: Optional[Set[str]] = None, 
+                       filepath: Optional[str] = None) -> SynonymLibrary:
     """
     Create and load a synonym library.
     
@@ -231,6 +232,24 @@ def get_synonym_library(blacklist_words: Set[str], common_words: Set[str],
     Returns:
         Loaded SynonymLibrary object
     """
+    # Use ConfigManager if available
+    try:
+        from para_humanizer.utils.config_manager import get_config_manager
+        config_manager = get_config_manager()
+        
+        if blacklist_words is None:
+            blacklist_words = config_manager.get_blacklist_words()
+            
+        if common_words is None:
+            common_words = config_manager.get_set("default.common_words")
+    except ImportError:
+        # Fallback to default empty sets if config_manager not available
+        if blacklist_words is None:
+            blacklist_words = set()
+        if common_words is None:
+            common_words = set()
+        logger.warning("ConfigManager not available. Using fallback empty sets for blacklist and common words.")
+    
     library = SynonymLibrary(blacklist_words, common_words)
     path = filepath or DEFAULT_SYNONYM_PATH
     

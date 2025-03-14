@@ -1,3 +1,9 @@
+---
+title: para-humanizer
+app_file: run_gradio.py
+sdk: gradio
+sdk_version: 5.4.0
+---
 # UltimateParaphraser
 
 Advanced text paraphrasing with human-like qualities.

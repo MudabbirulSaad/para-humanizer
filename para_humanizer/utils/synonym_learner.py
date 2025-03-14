@@ -1,5 +1,5 @@
 """
-Automatic Synonym Learner for UltimateParaphraser.
+Automatic Synonym Learner for Para-Humanizer.
 Provides functionality to discover and learn new synonyms from text.
 """
 import os
@@ -30,7 +30,8 @@ try:
 except ImportError:
     WORD2VEC_AVAILABLE = False
 
-from para_humanizer.utils.config import TAG_MAPPING, BLACKLIST_WORDS, COMMON_WORDS
+from para_humanizer.utils.config import TAG_MAPPING
+from para_humanizer.utils.config_manager import get_config_manager
 from para_humanizer.utils.synonym_loader import SynonymLibrary, DEFAULT_SYNONYM_PATH
 
 # Setup logging
@@ -69,6 +70,13 @@ class SynonymLearner:
         self.max_candidates_per_word = max_candidates_per_word
         self.learning_rate = learning_rate
         self.use_wordnet = use_wordnet
+        
+        # Get configuration manager
+        self.config_manager = get_config_manager()
+        
+        # Get blacklist and common words from config manager
+        self.blacklist_words = self.config_manager.get_blacklist_words()
+        self.common_words = self.config_manager.get_set("default.common_words")
         
         # Statistics for learned synonyms
         self.synonym_stats = defaultdict(lambda: defaultdict(dict))
@@ -215,7 +223,7 @@ class SynonymLearner:
                     
                     # Apply some basic filtering
                     if (synonym != word and 
-                        synonym.lower() not in BLACKLIST_WORDS and
+                        synonym.lower() not in self.blacklist_words and
                         ' ' not in synonym and
                         '-' not in synonym and
                         len(synonym) >= 3 and
@@ -254,7 +262,7 @@ class SynonymLearner:
             word = token.text.lower()
             
             # Skip blacklisted words
-            if word in BLACKLIST_WORDS:
+            if word in self.blacklist_words:
                 continue
                 
             # Get context words (words that appear near this word)
@@ -336,7 +344,7 @@ class SynonymLearner:
             word = word.lower()
             
             # Skip short words, stopwords, non-alphabetic words
-            if (len(word) < 4 or word in BLACKLIST_WORDS or word in COMMON_WORDS or
+            if (len(word) < 4 or word in self.blacklist_words or word in self.common_words or
                 not word.isalpha() or word.isupper()):
                 continue
                 
@@ -374,7 +382,7 @@ class SynonymLearner:
                     similar_words = self.word_vectors.most_similar(word, topn=10)
                     for similar_word, similarity in similar_words:
                         # Apply filtering
-                        if (similar_word.lower() not in BLACKLIST_WORDS and
+                        if (similar_word.lower() not in self.blacklist_words and
                             similar_word.isalpha() and len(similar_word) >= 3 and
                             similarity > self.min_similarity):
                             candidates.append((similar_word, similarity * 0.8))  # Scale down embedding confidence
@@ -435,7 +443,7 @@ class SynonymLearner:
                 # Add to library if confidence is high enough
                 if confidence >= self.confidence_threshold:
                     # Add to library
-                    if word not in BLACKLIST_WORDS and synonym not in BLACKLIST_WORDS:
+                    if word not in self.blacklist_words and synonym not in self.blacklist_words:
                         self.synonym_library.add_synonym(word, synonym, category)
                         learned_synonyms[word].append((synonym, confidence))
                         self.total_learned += 1
@@ -490,4 +498,24 @@ def get_synonym_learner(synonym_library: SynonymLibrary) -> SynonymLearner:
     Returns:
         Initialized SynonymLearner
     """
-    return SynonymLearner(synonym_library)
+    config_manager = get_config_manager()
+    
+    # Get configuration from config manager
+    embedding_model = config_manager.get("default.synonym_learning.embedding_model", "glove-wiki-gigaword-100")
+    min_similarity = config_manager.get_float("default.synonym_learning.min_similarity", 0.70)
+    confidence_threshold = config_manager.get_float("default.synonym_learning.confidence_threshold", 0.65)
+    max_candidates = config_manager.get_int("default.synonym_learning.max_candidates_per_word", 5)
+    learning_rate = config_manager.get_float("default.synonym_learning.learning_rate", 0.05)
+    use_wordnet = config_manager.get_boolean("default.synonym_learning.use_wordnet", True)
+    
+    learner = SynonymLearner(
+        synonym_library=synonym_library,
+        embedding_model=embedding_model,
+        min_similarity=min_similarity,
+        confidence_threshold=confidence_threshold,
+        max_candidates_per_word=max_candidates,
+        learning_rate=learning_rate,
+        use_wordnet=use_wordnet
+    )
+    
+    return learner

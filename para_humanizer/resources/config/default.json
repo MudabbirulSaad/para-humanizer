@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Default configuration for Para-Humanizer",
+    "date_updated": "2025-03-14"
+  },
+  "settings": {
+    "use_gpu": true,
+    "batch_size": 8,
+    "hybrid_mode": true,
+    "transformer_disable": false,
+    "rule_based_rate": 0.4,
+    "transformer_rate": 0.0,
+    "humanize": true,
+    "humanize_intensity": 0.5,
+    "typo_rate": 0.005,
+    "no_parallel": false
+  },
+  "tag_mapping": {
+    "NN": "n",
+    "NNS": "n",
+    "VB": "v",
+    "VBD": "v",
+    "VBG": "v",
+    "VBN": "v",
+    "JJ": "a",
+    "JJR": "a",
+    "JJS": "a",
+    "RB": "r",
+    "RBR": "r",
+    "RBS": "r"
+  },
+  "synonym_learning": {
+    "embedding_model": "glove-wiki-gigaword-100",
+    "min_similarity": 0.70,
+    "confidence_threshold": 0.65,
+    "max_candidates_per_word": 5,
+    "learning_rate": 0.05,
+    "use_wordnet": true
+  },
+  "common_words": [
+    "the", "and", "a", "an", "of", "to", "in", "that", "it", "with",
+    "for", "on", "is", "was", "be", "as", "are", "were", "am", "been",
+    "being", "by", "at", "this", "these", "those", "from", "has", "have",
+    "had", "having", "do", "does", "did", "doing", "done", "would", "should",
+    "could", "will", "shall", "can", "may", "might", "must", "about", "like",
+    "through", "over", "under", "between", "after", "before", "during", "since",
+    "until", "while", "because", "though", "although", "if", "unless", "except",
+    "but", "yet", "so", "or", "nor", "either", "neither", "both", "whether",
+    "not", "only", "just", "very", "too", "quite", "rather", "somewhat", "how",
+    "when", "where", "why", "what", "who", "whom", "whose", "which", "there"
+  ],
+  "expansion_templates": [
+    "{statement} -> In my view, {statement}",
+    "{statement} -> As I see it, {statement}",
+    "{statement} -> From my perspective, {statement}",
+    "{statement} -> {statement}, if that makes sense",
+    "{statement} -> {statement}, which I think is important",
+    "{statement} -> I believe that {statement}",
+    "{statement} -> I would say that {statement}",
+    "{statement} -> To be honest, {statement}",
+    "{statement} -> Honestly, {statement}"
+  ],
+  "reduction_templates": [
+    "I think that {statement} -> {statement}",
+    "In my opinion, {statement} -> {statement}",
+    "I believe that {statement} -> {statement}",
+    "From my perspective, {statement} -> {statement}",
+    "It seems to me that {statement} -> {statement}",
+    "I would say that {statement} -> {statement}",
+    "It appears that {statement} -> {statement}",
+    "In my view, {statement} -> {statement}",
+    "To be honest, {statement} -> {statement}"
+  ]
+}

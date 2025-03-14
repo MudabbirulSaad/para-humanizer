@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Technical terms and phrases that shouldn't be paraphrased",
+    "date_updated": "2025-03-14"
+  },
+  "protected_terms": [
+    "covid-19", "covid", "sars-cov-2", "coronavirus",
+    "python", "javascript", "java", "c++", "react", "angular", "vue", "node.js",
+    "microsoft", "google", "apple", "amazon", "facebook", "twitter", "linkedin",
+    "bitcoin", "ethereum", "blockchain", "cryptocurrency", "crypto",
+    "machine learning", "artificial intelligence", "ai", "ml", "deep learning",
+    "neural network", "transformer", "attention", "nlp", "natural language processing",
+    "tensorflow", "pytorch", "keras", "scikit-learn", "pandas", "numpy",
+    "cpu", "gpu", "tpu", "ram", "ssd", "hdd", "storage", "memory", "processor",
+    "html", "css", "xml", "json", "yaml", "api", "rest", "graphql", "http", "https",
+    "sql", "nosql", "database", "mysql", "postgresql", "mongodb", "redis",
+    "aws", "azure", "gcp", "cloud", "serverless", "docker", "kubernetes", "container",
+    "git", "github", "gitlab", "bitbucket", "version control", "ci/cd", "devops",
+    "linux", "windows", "macos", "ios", "android", "operating system", "os",
+    "para-humanizer"
+  ]
+}

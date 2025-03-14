@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Words to avoid replacing due to common bad replacements",
+    "date_updated": "2025-03-14"
+  },
+  "blacklist_words": [
+    "ass", "arse", "bitch", "bastard", "crap", "cunt", "damn", "dick", "douchebag",
+    "fag", "faggot", "fuck", "fucked", "fucking", "goddamn", "hell", "jackass", "jerk",
+    "piss", "pissed", "prick", "pussy", "shit", "slut", "twat", "wanker", "whore",
+    "cock", "penis", "dick",
+    
+    "idiotic", "stupid", "dumb", "moronic", "lame", "crazy", "insane", "nuts",
+    "retarded", "crippled", "handicapped", "spastic", "autistic", "schizo",
+    
+    "virtually", "literally", "actually", "basically", "essentially", "utterly",
+    "utter", "complete", "absolutely", "totally", "utter", "sheer", "pure",
+    "perfect", "entire", "pure", "mere", "outright", "downright", "thorough",
+    
+    "technical", "systematic", "inherent", "intrinsic", "ostensible", "putative",
+    "cognizant", "salient", "nominal", "purported", "substantive", "normative",
+    
+    "anal", "anus", "aroused", "ballsack", "blowjob", "boner", "boob", "breast",
+    "butt", "butthole", "climax", "cum", "ejaculate", "erection", "fetish",
+    "foreskin", "genital", "hardcore", "horny", "intercourse", "jizz", "labia",
+    "masturbate", "nipple", "nude", "oral", "orgasm", "porn", "pornography",
+    "rectal", "rectum", "scrotum", "semen", "sex", "sexual", "sexy", "skank",
+    "sperm", "testicle", "tit", "vagina", "vulva", "wank"
+  ]
+}

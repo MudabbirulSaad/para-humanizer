@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Sentence structure templates for rule-based transformations",
+    "date_updated": "2025-03-14"
+  },
+  "sentence_structures": [
+    ["It is {adj} that {subject} {verb}", "{subject} {verb}, which is {adj}"],
+    ["There are {plural_noun} that {plural_verb}", "{plural_noun} {plural_verb}"],
+    ["It is necessary to {verb}", "We need to {verb}"],
+    ["One must {verb}", "We should {verb}"],
+    ["It is important to {verb}", "{verb}ing is important"],
+    ["In order to {verb}", "To {verb}"],
+    ["Due to the fact that", "Because"],
+    ["Despite the fact that", "Although"],
+    ["In the event that", "If"],
+    ["This is a {noun} that", "This {noun}"],
+    ["The reason is because", "Because"],
+    ["For the reason that", "Since"],
+    ["During the course of", "During"],
+    ["In close proximity to", "Near"],
+    ["At this point in time", "Now"],
+    ["In the near future", "Soon"],
+    ["As a matter of fact", "Actually"],
+    ["A majority of", "Most"],
+    ["A large number of", "Many"],
+    ["A significant portion of", "Much of"],
+    ["In spite of the fact that", "Although"],
+    ["In view of the fact that", "Since"],
+    ["With regard to", "About"],
+    ["For the purpose of", "For"],
+    ["In the process of", "While"]
+  ],
+  "expansion_templates": [
+    ["The {noun}", "The {adj} {noun}"],
+    ["{noun}", "The {noun}"],
+    ["{verb}", "{adv} {verb}"],
+    ["{adj} {noun}", "{adj}, {adj} {noun}"],
+    ["{verb} {noun}", "{verb} the {noun}"],
+    ["{verb} {prep} {noun}", "{verb} {prep} the {noun}"],
+    ["{prep} {noun}", "{prep} the {noun}"],
+    ["{noun} {verb}", "{noun} {adv} {verb}"]
+  ],
+  "reduction_templates": [
+    ["The {adj} {noun}", "{noun}"],
+    ["very {adj}", "{adj}"],
+    ["really {adj}", "{adj}"],
+    ["extremely {adj}", "{adj}"],
+    ["definitely {verb}", "{verb}"],
+    ["absolutely {verb}", "{verb}"],
+    ["just {verb}", "{verb}"],
+    ["simply {verb}", "{verb}"],
+    ["actually {verb}", "{verb}"]
+  ]
+}

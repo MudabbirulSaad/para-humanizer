@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Filler words for humanizing text",
+    "date_updated": "2025-03-14"
+  },
+  "fillers": [
+    "actually", "basically", "honestly", "simply", 
+    "essentially", "really", "definitely", "probably",
+    "personally", "frankly", "seriously", "clearly",
+    "obviously", "of course", "you know", "I mean",
+    "to be fair", "to be honest", "in my opinion", "well"
+  ]
+}

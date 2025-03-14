@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Sentence connectors for improved text flow",
+    "date_updated": "2025-03-14"
+  },
+  "connectors": [
+    "Also", "Additionally", "Furthermore", "Besides",
+    "On the other hand", "However", "Similarly",
+    "In addition", "Meanwhile", "Consequently",
+    "As a result", "Therefore", "For instance",
+    "In fact", "In contrast", "Interestingly"
+  ]
+}

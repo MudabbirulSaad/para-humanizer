@@ -1,137 +1,46 @@
 """
-Configuration module for UltimateParaphraser.
+Configuration module for Para-Humanizer.
 Contains default settings and constants used throughout the application.
+This module now uses the ConfigManager for all configuration settings.
 """
 import os
 from typing import Dict, List, Set, Tuple, Any, Optional
 
+from para_humanizer.utils.config_manager import get_config_manager
+
+# Get the configuration manager
+config_manager = get_config_manager()
+
 # Default settings
-DEFAULT_SETTINGS = {
-    "use_gpu": True,
-    "batch_size": 8,
-    "hybrid_mode": True,
-    "transformer_disable": False,
-    "rule_based_rate": 0.4,
-    "transformer_rate": 0.0,  # Default to 0 for Windows compatibility
-    "humanize": True,
-    "humanize_intensity": 0.5,
-    "typo_rate": 0.005,
-    "no_parallel": False
-}
+DEFAULT_SETTINGS = config_manager.get_settings()
 
 # Tag mapping for part-of-speech conversion
-TAG_MAPPING = {
-    'NN': 'n',
-    'NNS': 'n',
-    'VB': 'v',
-    'VBD': 'v',
-    'VBG': 'v',
-    'VBN': 'v',
-    'JJ': 'a',
-    'JJR': 'a',
-    'JJS': 'a',
-    'RB': 'r',
-    'RBR': 'r',
-    'RBS': 'r'
-}
+TAG_MAPPING = config_manager.get_tag_mapping()
 
 # Common filler words for humanizing text
-FILLERS = [
-    "actually", "basically", "honestly", "simply", 
-    "essentially", "really", "definitely", "probably",
-    "personally", "frankly", "seriously", "clearly",
-    "obviously", "of course", "you know", "I mean",
-    "to be fair", "to be honest", "in my opinion", "well"
-]
+FILLERS = config_manager.get_fillers()
 
 # Sentence connectors for improved flow
-CONNECTORS = [
-    "Also", "Additionally", "Furthermore", "Besides",
-    "On the other hand", "However", "Similarly",
-    "In addition", "Meanwhile", "Consequently",
-    "As a result", "Therefore", "For instance",
-    "In fact", "In contrast", "Interestingly"
-]
+CONNECTORS = config_manager.get_connectors()
 
 # Technical terms and phrases that shouldn't be paraphrased
-PROTECTED_TERMS = set([
-    'covid-19', 'covid', 'sars-cov-2', 'coronavirus',
-    'python', 'javascript', 'java', 'c++', 'react', 'angular', 'vue', 'node.js',
-    'microsoft', 'google', 'apple', 'amazon', 'facebook', 'twitter', 'linkedin',
-    'bitcoin', 'ethereum', 'blockchain', 'cryptocurrency', 'crypto',
-    'machine learning', 'artificial intelligence', 'ai', 'ml', 'deep learning',
-    'neural network', 'transformer', 'attention', 'nlp', 'natural language processing',
-    'tensorflow', 'pytorch', 'keras', 'scikit-learn', 'pandas', 'numpy',
-    'cpu', 'gpu', 'tpu', 'ram', 'ssd', 'hdd', 'storage', 'memory', 'processor',
-    'html', 'css', 'xml', 'json', 'yaml', 'api', 'rest', 'graphql', 'http', 'https',
-    'sql', 'nosql', 'database', 'mysql', 'postgresql', 'mongodb', 'redis',
-    'aws', 'azure', 'gcp', 'cloud', 'serverless', 'docker', 'kubernetes', 'container',
-    'git', 'github', 'gitlab', 'bitbucket', 'version control', 'ci/cd', 'devops',
-    'linux', 'windows', 'macos', 'ios', 'android', 'operating system', 'os',
-    'ultimateparaphraser',  # Add our tool name as protected
-])
+PROTECTED_TERMS = config_manager.get_protected_terms()
 
 # Words to avoid replacing due to common bad replacements
-BLACKLIST_WORDS = set([
-    # Inappropriate or potentially offensive words
-    'ass', 'arse', 'bitch', 'bastard', 'crap', 'cunt', 'damn', 'dick', 'douchebag',
-    'fag', 'faggot', 'fuck', 'fucked', 'fucking', 'goddamn', 'hell', 'jackass', 'jerk',
-    'piss', 'pissed', 'prick', 'pussy', 'shit', 'slut', 'twat', 'wanker', 'whore',
-    'cock', 'penis', 'dick',
-    
-    # Professional-sounding but still potentially inappropriate
-    'idiotic', 'stupid', 'dumb', 'moronic', 'lame', 'crazy', 'insane', 'nuts',
-    'retarded', 'crippled', 'handicapped', 'spastic', 'autistic', 'schizo',
-    
-    # Words that often lead to confusing replacements
-    'virtually', 'literally', 'actually', 'basically', 'essentially', 'utterly',
-    'utter', 'complete', 'absolutely', 'totally', 'utter', 'sheer', 'pure',
-    'perfect', 'entire', 'pure', 'mere', 'outright', 'downright', 'thorough',
-    
-    # Ambiguous or technical terms that make poor substitutions
-    'technical', 'systematic', 'inherent', 'intrinsic', 'ostensible', 'putative',
-    'cognizant', 'salient', 'nominal', 'purported', 'substantive', 'normative',
-    
-    # Additional inappropriate terms
-    'anal', 'anus', 'aroused', 'ballsack', 'blowjob', 'boner', 'boob', 'breast',
-    'butt', 'butthole', 'climax', 'cum', 'ejaculate', 'erection', 'fetish',
-    'foreskin', 'genital', 'hardcore', 'horny', 'intercourse', 'jizz', 'labia',
-    'masturbate', 'nipple', 'nude', 'oral', 'orgasm', 'porn', 'pornography',
-    'rectal', 'rectum', 'scrotum', 'semen', 'sex', 'sexual', 'sexy', 'skank',
-    'sperm', 'testicle', 'tit', 'vagina', 'vulva', 'wank',
-    
-    # Additional terms that could be inappropriate in professional context
-    'cheap', 'trashy', 'nasty', 'crappy', 'lousy', 'junky', 'shoddy', 'worthless',
-    'pathetic', 'useless', 'incompetent', 'inept', 'ridiculous', 'absurd',
-    
-    "is", "are", "was", "were", "be", "been", "being",
-    "the", "a", "an", "this", "that", "these", "those",
-    "and", "but", "or", "for", "with", "by", "about", "it",
-    "artificial", "intelligence", "machine", "learning",
-    "not", "no", "none", "never", "ever", "always", "sometimes",
-    "often", "seldom", "rarely", "frequently", "occasionally",
-    "every", "each", "any", "some", "all", "both", "either", "neither",
-    "as", "so", "very", "too", "quite", "rather", "extremely",
-    "few", "many", "much", "more", "most", "less", "least",
-    "over", "under", "before", "after", "during", "until", "while",
-    "if", "unless", "although", "though", "because", "since",
-    "they", "them", "their", "theirs", "themselves",
-    "we", "us", "our", "ours", "ourselves",
-    "you", "your", "yours", "yourself", "yourselves",
-    "he", "him", "his", "himself",
-    "she", "her", "hers", "herself",
-    "it", "its", "itself",
-    "i", "me", "my", "mine", "myself",
-    "who", "whom", "whose", "which", "what", "where", "when", "why", "how"
-])
+BLACKLIST_WORDS = config_manager.get_blacklist_words()
 
-# Common words that don't need synonyms as often
+# Common words that often don't need synonyms
 COMMON_WORDS = set([
-    "should", "would", "could", "may", "might", "must", "shall",
-    "day", "week", "month", "year", "time", "place", "person",
-    "case", "fact", "point", "world", "life", "man", "woman", 
-    "child", "home", "room", "area", "money", "job", "school",
-    "university", "company", "business", "government"
+    "the", "and", "a", "an", "of", "to", "in", "that", "it", "with",
+    "for", "on", "is", "was", "be", "as", "are", "were", "am", "been",
+    "being", "by", "at", "this", "these", "those", "from", "has", "have",
+    "had", "having", "do", "does", "did", "doing", "done", "would", "should",
+    "could", "will", "shall", "can", "may", "might", "must", "about", "like",
+    "through", "over", "under", "between", "after", "before", "during", "since",
+    "until", "while", "because", "though", "although", "if", "unless", "except",
+    "but", "yet", "so", "or", "nor", "either", "neither", "both", "whether",
+    "not", "only", "just", "very", "too", "quite", "rather", "somewhat", "how",
+    "when", "where", "why", "what", "who", "whom", "whose", "which", "there"
 ])
 
 # Common contractions for more human-like text
@@ -185,27 +94,6 @@ COMMON_TYPOS = {
     "because": ["becuase", "becase", "becaus"]
 }
 
-# Sentence structure templates for variety
-SENTENCE_STRUCTURES = [
-    # Inversion templates
-    ("It is {adj} that {subject} {verb}", "{subject} {verb}, which is {adj}"),
-    ("There are {plural_noun} that {plural_verb}", "{plural_noun} {plural_verb}"),
-    ("It is necessary to {verb}", "We need to {verb}"),
-    ("This is a {noun} that {verb}", "This {noun} {verb}"),
-    
-    # Voice change templates
-    ("{subject} {verb} {object}", "{object} {passive_verb} by {subject}"),
-    ("{subject} {verb} that", "It is {past_participle} by {subject} that"),
-    
-    # Conjunction templates
-    ("{clause1}. {clause2}", "{clause1}, and {clause2}"),
-    ("{clause1}. {clause2}", "{clause1}, but {clause2}"),
-    ("{clause1}. {clause2}", "{clause1} while {clause2}"),
-    ("{clause1}. {clause2}", "Although {clause1}, {clause2}"),
-    ("{clause1}. {clause2}", "Since {clause1}, {clause2}"),
-    ("{clause1}. {clause2}", "{clause1}, which {clause2}")
-]
-
 # Punctuation variations for more human-like text
 PUNCTUATION_VARIATIONS = {
     ".": [".", "...", "!"],
@@ -223,5 +111,88 @@ INFORMAL_PHRASES = [
 # Default transformer model name
 DEFAULT_TRANSFORMER_MODEL = "tuner007/pegasus_paraphrase"
 
+# Sentence structure transformations using templates
+SENTENCE_STRUCTURES = config_manager.get_sentence_structures()
+
+# Templates for expanding text
+EXPANSION_TEMPLATES = config_manager.get_expansion_templates()
+
+# Templates for reducing text
+REDUCTION_TEMPLATES = config_manager.get_reduction_templates()
+
+# Humanizing operations and their probabilities
+HUMANIZE_OPERATIONS = {
+    "add_fillers": 0.35,       # Add filler words
+    "vary_contractions": 0.30, # Expand/contract words
+    "add_typos": 0.05,         # Add occasional typos
+    "add_hedges": 0.15,        # Add hedging language
+    "parallel_structure": 0.10,  # Convert to parallel structure
+    "passive_to_active": 0.20, # Convert passive to active
+    "self_reference": 0.15,    # Add self-reference
+    "expand_phrases": 0.25,    # Expand phrases
+    "reduce_phrases": 0.15,    # Reduce phrases
+    "combine_sentences": 0.10, # Combine adjacent sentences
+    "split_sentences": 0.10    # Split complex sentences
+}
+
+# Human typo patterns based on keyboard layout and common mistakes
+TYPO_PATTERNS = {
+    # Common keyboard adjacency errors
+    "a": ["s", "q", "z"],
+    "b": ["v", "n", "g"],
+    "c": ["x", "v", "d"],
+    "d": ["s", "f", "e"],
+    "e": ["w", "r", "d"],
+    "f": ["d", "g", "r"],
+    "g": ["f", "h", "t"],
+    "h": ["g", "j", "y"],
+    "i": ["u", "o", "k"],
+    "j": ["h", "k", "u"],
+    "k": ["j", "l", "i"],
+    "l": ["k", "p", "o"],
+    "m": ["n", "j", "k"],
+    "n": ["m", "b", "h"],
+    "o": ["i", "p", "l"],
+    "p": ["o", "l", "["],
+    "q": ["w", "a", "s"],
+    "r": ["e", "t", "f"],
+    "s": ["a", "d", "w"],
+    "t": ["r", "y", "g"],
+    "u": ["y", "i", "j"],
+    "v": ["c", "b", "f"],
+    "w": ["q", "e", "s"],
+    "x": ["z", "c", "d"],
+    "y": ["t", "u", "h"],
+    "z": ["a", "x", "s"],
+    
+    # Common doubling errors
+    "double": ["m", "n", "l", "t", "p", "c", "s"],
+    
+    # Common omission errors
+    "omit": ["a", "e", "i", "o", "u", "h", "t", "r", "s"],
+    
+    # Common transposition patterns
+    "transpose": ["on", "in", "er", "re", "es", "se", "th", "ht", "ed", "de", "an", "na"]
+}
+
 # The maximum number of threads to use for parallel processing
 MAX_WORKERS = max(2, os.cpu_count() or 1)
+
+# Functions to simulate human typing behavior
+def get_typo_for_char(char: str) -> str:
+    """
+    Get a typo for a character based on keyboard layout.
+    Used to simulate realistic human typos.
+    """
+    import random
+    if not char.isalpha():
+        return char
+        
+    char = char.lower()
+    if char in TYPO_PATTERNS:
+        options = TYPO_PATTERNS[char]
+        if random.random() < 0.7:  # 70% chance of keyboard adjacency error
+            return random.choice(options)
+    
+    # Keep original character
+    return char
