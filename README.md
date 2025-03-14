@@ -1,9 +1,3 @@
----
-title: para-humanizer
-app_file: run_gradio.py
-sdk: gradio
-sdk_version: 5.4.0
----
 # UltimateParaphraser
 
 Advanced text paraphrasing with human-like qualities.
@@ -39,7 +33,7 @@ UltimateParaphraser is a powerful text transformation tool that paraphrases cont
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/para-humanizer.git
+   git clone https://github.com/mudabbirulsaad/para-humanizer.git
    cd para-humanizer
    ```
 
