@@ -235,6 +235,45 @@ python examples/api_client.py --url http://localhost:8000 --file input.txt
 python examples/api_client.py --url http://localhost:8000 --file input.txt --intelligent
 ```
 
+## Gradio Web Interface
+
+Para-Humanizer includes a user-friendly web interface built with Gradio, making it accessible to users without technical expertise.
+
+### Features
+
+- **Browser-based UI**: Easy-to-use interface accessible through any web browser
+- **Intelligent Parameter Selection**: Option to automatically optimize paraphrasing parameters
+- **Manual Controls**: Fine-tune all parameters with intuitive sliders
+- **Examples**: Pre-loaded examples to demonstrate capabilities
+- **Real-time Results**: See results immediately without delay
+
+### Running the Gradio Interface
+
+Start the Gradio interface with default settings:
+
+```bash
+python run_gradio.py
+```
+
+With customization options:
+
+```bash
+python run_gradio.py --host 0.0.0.0 --port 7860 --share
+```
+
+Use the `--share` flag to create a temporary public URL that you can share with others.
+
+### Screenshots
+
+![Gradio Interface](docs/images/gradio_interface.png)
+
+The interface provides a simple yet powerful way to access all of Para-Humanizer's capabilities without writing any code. It's perfect for:
+
+- Content creators looking to quickly rephrase text
+- Educators helping students improve writing
+- Testing different paraphrasing parameters interactively
+- Demonstrating the system to non-technical users
+
 ## Package Structure
 
 The codebase follows a modular architecture for better maintainability:
