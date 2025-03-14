@@ -26,14 +26,37 @@ def main():
     print(text)
     
     # Basic paraphrasing with default settings
-    print("\n--- Default paraphrasing ---")
+    print("\n--- Default paraphrasing (Casual tone) ---")
     paraphrased = paraphraser.paraphrase(
         text,
         rule_based_rate=0.4,  # Medium word replacement rate
         humanize=True,  # Apply humanization
-        humanize_intensity=0.5  # Medium humanization intensity
+        humanize_intensity=0.5,  # Medium humanization intensity
+        tone="casual"  # Default casual tone
     )
     print(paraphrased)
+    
+    # Academic tone paraphrasing
+    print("\n--- Academic tone paraphrasing ---")
+    paraphrased_academic = paraphraser.paraphrase(
+        text,
+        rule_based_rate=0.4,  # Medium word replacement rate
+        humanize=True,
+        humanize_intensity=0.4,  # Slightly lower humanization intensity
+        tone="academic"  # Academic tone
+    )
+    print(paraphrased_academic)
+    
+    # Formal tone paraphrasing
+    print("\n--- Formal tone paraphrasing ---")
+    paraphrased_formal = paraphraser.paraphrase(
+        text,
+        rule_based_rate=0.5,  # Medium word replacement rate
+        humanize=True,
+        humanize_intensity=0.45,  # Medium humanization intensity
+        tone="formal"  # Formal tone
+    )
+    print(paraphrased_formal)
     
     # More aggressive paraphrasing
     print("\n--- Aggressive paraphrasing ---")
@@ -41,7 +64,8 @@ def main():
         text,
         rule_based_rate=0.7,  # Higher word replacement rate
         humanize=True,
-        humanize_intensity=0.7  # Higher humanization intensity
+        humanize_intensity=0.7,  # Higher humanization intensity
+        tone="casual"  # Casual tone
     )
     print(paraphrased_aggressive)
     
@@ -51,7 +75,8 @@ def main():
         text,
         rule_based_rate=0.0,  # No word replacement
         humanize=True,
-        humanize_intensity=0.6  # Medium-high humanization
+        humanize_intensity=0.6,  # Medium-high humanization
+        tone="casual"  # Casual tone
     )
     print(humanized_only)
     
@@ -88,6 +113,7 @@ def main():
         rule_based_rate=0.5,
         humanize=True,
         humanize_intensity=0.4,
+        tone="academic",  # Academic tone
         preserve_structure=True  # Enable structure preservation
     )
     print(structured_paraphrased)
@@ -99,6 +125,7 @@ def main():
         rule_based_rate=0.5,
         humanize=True,
         humanize_intensity=0.4,
+        tone="academic",  # Academic tone
         preserve_structure=False  # Disable structure preservation
     )
     print(unstructured_paraphrased)

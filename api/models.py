@@ -23,6 +23,7 @@ class ParaphraseRequest(BaseModel):
                             description="The rate of introducing typos (0.0 to 1.0)")
     no_parallel: bool = Field(False, description="Whether to disable parallel processing")
     preserve_structure: bool = Field(True, description="Whether to preserve the original document structure (paragraphs, bullet points, formatting)")
+    tone: str = Field("casual", description="The writing tone to use - 'casual', 'formal', or 'academic'")
     
     @field_validator('text')
     @classmethod
@@ -30,6 +31,14 @@ class ParaphraseRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Text cannot be empty")
         return v.strip()
+    
+    @field_validator('tone')
+    @classmethod
+    def validate_tone(cls, v: str) -> str:
+        valid_tones = ["casual", "formal", "academic"]
+        if v.lower() not in valid_tones:
+            raise ValueError(f"Tone must be one of {valid_tones}")
+        return v.lower()
     
     @model_validator(mode='after')
     def check_rates(self) -> 'ParaphraseRequest':

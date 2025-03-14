@@ -6,7 +6,7 @@ import re
 import random
 import spacy
 import nltk
-from typing import List, Dict, Tuple, Set, Any, Optional
+from typing import List, Dict, Tuple, Set, Any, Optional, Literal
 
 from para_humanizer.utils.config import (
     FILLERS, CONNECTORS, CONTRACTIONS, PUNCTUATION_VARIATIONS, 
@@ -38,19 +38,56 @@ class Humanizer:
         self.informal_phrases = INFORMAL_PHRASES
         self.sentence_structures = SENTENCE_STRUCTURES
         
-    def add_fillers(self, text: str, intensity: float = 0.5) -> str:
+        # Define formal versions of fillers with less casual language
+        self.formal_fillers = [
+            "indeed", "certainly", "notably", "significantly",
+            "importantly", "evidently", "clearly", "in fact",
+            "to clarify", "in particular", "specifically"
+        ]
+        
+        # Define academic hedges that are appropriate for formal writing
+        self.academic_hedges = [
+            "It appears that ", "Research suggests that ", 
+            "Evidence indicates that ", "It may be argued that ",
+            "Studies demonstrate that ", "Analysis reveals that ",
+            "The data suggests that ", "According to the literature, ",
+            "As demonstrated by previous work, ", "Empirical evidence shows that "
+        ]
+        
+        # Define formal thinking patterns for academic writing
+        self.formal_thinking_patterns = [
+            " more precisely, ", " more specifically, ", 
+            " to be precise, ", " to clarify, ", 
+            " that is to say, ", " in other words, "
+        ]
+        
+    def add_fillers(self, text: str, intensity: float = 0.5, tone: str = "casual") -> str:
         """
         Add filler words and phrases to make text sound more human.
         
         Args:
             text: The input text
             intensity: Controls how frequently fillers are added (0.0 to 1.0)
+            tone: The writing tone ("formal", "academic", "casual")
             
         Returns:
             Text with added filler words
         """
-        # Adjust rate based on intensity
-        rate = min(0.15, intensity * 0.3)  # Cap at 15% even with max intensity
+        # For academic writing, drastically reduce or eliminate fillers
+        if tone == "academic":
+            # Nearly eliminate fillers in academic writing
+            if intensity > 0.7:  # Only add minimal formal indicators at high intensity
+                rate = 0.03  # Very low rate even with high intensity
+                fillers_to_use = self.formal_fillers
+            else:
+                return text  # No fillers for academic at normal intensities
+        elif tone == "formal":
+            rate = min(0.08, intensity * 0.16)  # Max 8% for formal writing
+            fillers_to_use = self.formal_fillers
+        else:  # casual
+            # Adjust rate based on intensity
+            rate = min(0.15, intensity * 0.3)  # Cap at 15% even with max intensity
+            fillers_to_use = self.fillers
         
         # Split into sentences
         sentences = nltk.sent_tokenize(text)
@@ -68,7 +105,7 @@ class Humanizer:
                 insert_pos = random.randint(1, min(3, len(words) - 1))
                 
                 # Select a filler and add it appropriately
-                filler = random.choice(self.fillers)
+                filler = random.choice(fillers_to_use)
                 
                 # Properly format the filler's position
                 if insert_pos == 0:
@@ -86,19 +123,32 @@ class Humanizer:
             
         return ' '.join(result)
     
-    def add_thinking_patterns(self, text: str, intensity: float = 0.5) -> str:
+    def add_thinking_patterns(self, text: str, intensity: float = 0.5, tone: str = "casual") -> str:
         """
         Add human thinking patterns like self-corrections and second thoughts.
         
         Args:
             text: The input text
             intensity: Controls how frequently patterns are added (0.0 to 1.0)
+            tone: The writing tone ("formal", "academic", "casual")
             
         Returns:
             Text with added thinking patterns
         """
-        # Adjust rate based on intensity (relatively rare even at high intensity)
-        rate = min(0.08, intensity * 0.16)  # Cap at 8% with max intensity
+        # Academic writing should have very minimal or no informal thinking patterns
+        if tone == "academic":
+            if intensity > 0.8:  # Only allow minimal formal corrections at very high intensity
+                rate = 0.02  # Extremely low rate
+                thinking_patterns = self.formal_thinking_patterns
+            else:
+                return text  # No thinking patterns for academic at normal intensities
+        elif tone == "formal":
+            rate = min(0.04, intensity * 0.08)  # Max 4% for formal writing
+            thinking_patterns = self.formal_thinking_patterns
+        else:  # casual
+            # Adjust rate based on intensity (relatively rare even at high intensity)
+            rate = min(0.08, intensity * 0.16)  # Cap at 8% with max intensity
+            thinking_patterns = None  # Use all pattern types for casual
         
         sentences = nltk.sent_tokenize(text)
         result = []
@@ -111,10 +161,9 @@ class Humanizer:
                 
             # Determine if we add a thinking pattern
             if random.random() < rate:
-                pattern_type = random.randint(0, 3)
-                
-                if pattern_type == 0:  # Self-correction
-                    # Find a content word to "correct"
+                # For academic/formal, only use specific formal corrections
+                if tone in ["academic", "formal"]:
+                    # Find a content word to refine with formal language
                     words = sentence.split()
                     content_words = []
                     
@@ -126,69 +175,89 @@ class Humanizer:
                             
                     if content_words:
                         pos, word = random.choice(content_words)
+                        style = random.choice(thinking_patterns)
+                        words[pos] = words[pos] + style + word.lower()
+                        sentence = ' '.join(words)
+                else:
+                    # For casual, use the full range of thinking patterns
+                    pattern_type = random.randint(0, 3)
+                    
+                    if pattern_type == 0:  # Self-correction
+                        # Find a content word to "correct"
+                        words = sentence.split()
+                        content_words = []
                         
-                        # Choose a self-correction style
-                        correction_styles = [
-                            f" - no, I mean {word.lower() if word[0].isupper() else word}",
-                            f", or rather {word.lower() if word[0].isupper() else word}",
-                            f" (or {word.lower() if word[0].isupper() else word}, actually)"
+                        for j, word in enumerate(words):
+                            # Consider nouns, verbs, adjectives as content words
+                            if (len(word) > 3 and word.isalpha() and 
+                                j > 0 and j < len(words) - 1):  # Not first or last
+                                content_words.append((j, word))
+                                
+                        if content_words:
+                            pos, word = random.choice(content_words)
+                            
+                            # Choose a self-correction style
+                            correction_styles = [
+                                f" - no, I mean {word.lower() if word[0].isupper() else word}",
+                                f", or rather {word.lower() if word[0].isupper() else word}",
+                                f" (or {word.lower() if word[0].isupper() else word}, actually)"
+                            ]
+                            
+                            style = random.choice(correction_styles)
+                            words[pos] = words[pos] + style
+                            sentence = ' '.join(words)
+                    
+                    elif pattern_type == 1:  # Hedge
+                        # Add hedging phrase at beginning
+                        hedges = [
+                            "I think ", "I believe ", "In my opinion, ", 
+                            "It seems like ", "From what I understand, ",
+                            "As far as I know, ", "If I recall correctly, "
                         ]
                         
-                        style = random.choice(correction_styles)
-                        words[pos] = words[pos] + style
-                        sentence = ' '.join(words)
-                
-                elif pattern_type == 1:  # Hedge
-                    # Add hedging phrase at beginning
-                    hedges = [
-                        "I think ", "I believe ", "In my opinion, ", 
-                        "It seems like ", "From what I understand, ",
-                        "As far as I know, ", "If I recall correctly, "
-                    ]
+                        hedge = random.choice(hedges)
+                        
+                        # Make sure the first letter after the hedge is lowercase
+                        if sentence and sentence[0].isupper():
+                            sentence = hedge + sentence[0].lower() + sentence[1:]
+                        else:
+                            sentence = hedge + sentence
                     
-                    hedge = random.choice(hedges)
+                    elif pattern_type == 2:  # Aside
+                        # Add a related aside
+                        asides = [
+                            " (though I could be wrong)",
+                            " (at least that's my understanding)",
+                            " (if I'm remembering correctly)",
+                            " (based on what I've seen)",
+                            " (though there's more to it than that)"
+                        ]
+                        
+                        # Add at end of sentence before period
+                        if sentence.endswith(('.', '!', '?')):
+                            sentence = sentence[:-1] + random.choice(asides) + sentence[-1]
+                        else:
+                            sentence = sentence + random.choice(asides)
                     
-                    # Make sure the first letter after the hedge is lowercase
-                    if sentence and sentence[0].isupper():
-                        sentence = hedge + sentence[0].lower() + sentence[1:]
-                    else:
-                        sentence = hedge + sentence
-                
-                elif pattern_type == 2:  # Aside
-                    # Add a related aside
-                    asides = [
-                        " (though I could be wrong)",
-                        " (at least that's my understanding)",
-                        " (if I'm remembering correctly)",
-                        " (based on what I've seen)",
-                        " (though there's more to it than that)"
-                    ]
-                    
-                    # Add at end of sentence before period
-                    if sentence.endswith(('.', '!', '?')):
-                        sentence = sentence[:-1] + random.choice(asides) + sentence[-1]
-                    else:
-                        sentence = sentence + random.choice(asides)
-                
-                elif pattern_type == 3:  # Second thought
-                    # Add a second thought to qualify the statement
-                    qualifiers = [
-                        " Actually, that's not quite right. ",
-                        " On second thought, ",
-                        " Wait, let me rephrase that. ",
-                        " Actually, to be more precise, ",
-                        " Let me clarify that. "
-                    ]
-                    
-                    # Add this to the next sentence
-                    next_sentence = sentences[i+1]
-                    qualifier = random.choice(qualifiers)
-                    
-                    # Make sure the first letter after the qualifier is uppercase
-                    if next_sentence and next_sentence[0].islower():
-                        sentences[i+1] = qualifier + next_sentence[0].upper() + next_sentence[1:]
-                    else:
-                        sentences[i+1] = qualifier + next_sentence
+                    elif pattern_type == 3:  # Second thought
+                        # Add a second thought to qualify the statement
+                        qualifiers = [
+                            " Actually, that's not quite right. ",
+                            " On second thought, ",
+                            " Wait, let me rephrase that. ",
+                            " Actually, to be more precise, ",
+                            " Let me clarify that. "
+                        ]
+                        
+                        # Add this to the next sentence
+                        next_sentence = sentences[i+1]
+                        qualifier = random.choice(qualifiers)
+                        
+                        # Make sure the first letter after the qualifier is uppercase
+                        if next_sentence and next_sentence[0].islower():
+                            sentences[i+1] = qualifier + next_sentence[0].upper() + next_sentence[1:]
+                        else:
+                            sentences[i+1] = qualifier + next_sentence
                     
             result.append(sentence)
             
@@ -208,19 +277,25 @@ class Humanizer:
         # Vary punctuation with a personalized touch
         return vary_punctuation(text, self.punctuation_variations)
     
-    def add_conversational_markers(self, text: str, intensity: float = 0.5) -> str:
+    def add_conversational_markers(self, text: str, intensity: float = 0.5, tone: str = "casual") -> str:
         """
         Add conversational markers for engaging, personal writing.
         
         Args:
             text: The input text
             intensity: Controls how frequently markers are added (0.0 to 1.0)
+            tone: The writing tone ("formal", "academic", "casual")
             
         Returns:
             Text with added conversational elements
         """
         # Adjust rate based on intensity
-        rate = min(0.12, intensity * 0.24)  # Cap at 12% with max intensity
+        if tone == "academic":
+            return text  # No conversational markers for academic writing
+        elif tone == "formal":
+            rate = min(0.06, intensity * 0.12)  # Max 6% for formal writing
+        else:  # casual
+            rate = min(0.12, intensity * 0.24)  # Cap at 12% with max intensity
         
         sentences = nltk.sent_tokenize(text)
         result = []
@@ -279,19 +354,25 @@ class Humanizer:
             
         return ' '.join(result)
     
-    def add_parenthetical_asides(self, text: str, intensity: float = 0.5) -> str:
+    def add_parenthetical_asides(self, text: str, intensity: float = 0.5, tone: str = "casual") -> str:
         """
         Add parenthetical asides for a more personal writing style.
         
         Args:
             text: The input text
             intensity: Controls how frequently asides are added (0.0 to 1.0)
+            tone: The writing tone ("formal", "academic", "casual")
             
         Returns:
             Text with added asides
         """
         # Adjust rate based on intensity
-        rate = min(0.10, intensity * 0.20)  # Cap at 10% with max intensity
+        if tone == "academic":
+            return text  # No parenthetical asides for academic writing
+        elif tone == "formal":
+            rate = min(0.04, intensity * 0.08)  # Max 4% for formal writing
+        else:  # casual
+            rate = min(0.10, intensity * 0.20)  # Cap at 10% with max intensity
         
         sentences = nltk.sent_tokenize(text)
         result = []
@@ -385,7 +466,7 @@ class Humanizer:
             
         return ' '.join(result)
     
-    def humanize(self, text: str, intensity: float = 0.5, typo_rate: float = 0.0) -> str:
+    def humanize(self, text: str, intensity: float = 0.5, typo_rate: float = 0.0, tone: str = "casual") -> str:
         """
         Apply all humanization techniques with control over intensity.
         
@@ -393,6 +474,7 @@ class Humanizer:
             text: The input text
             intensity: Controls how frequently effects are applied (0.0 to 1.0)
             typo_rate: Rate of introducing typos (0.0 to 1.0)
+            tone: The writing tone ("formal", "academic", "casual")
             
         Returns:
             Humanized text
@@ -408,17 +490,17 @@ class Humanizer:
         # The order matters for natural results
         
         # 1. Structural changes
-        text = self.add_conversational_markers(text, intensity)
+        text = self.add_conversational_markers(text, intensity, tone)
         
         # 2. Content additions
-        text = self.add_fillers(text, intensity)
-        text = self.add_parenthetical_asides(text, intensity)
+        text = self.add_fillers(text, intensity, tone)
+        text = self.add_parenthetical_asides(text, intensity, tone)
         
         # 3. Style modifications
         text = self.apply_punctuation_personality(text, intensity)
         
         # 4. Thinking patterns (add last as they can modify structure)
-        text = self.add_thinking_patterns(text, intensity)
+        text = self.add_thinking_patterns(text, intensity, tone)
         
         # 5. If typo rate is set, introduce typos
         if typo_rate > 0:

@@ -11,13 +11,9 @@ import threading
 import os
 from typing import List, Dict, Tuple, Optional, Set, Any, Union
 
-from para_humanizer.utils.config import (
-    TAG_MAPPING, PROTECTED_TERMS, BLACKLIST_WORDS, 
-    COMMON_WORDS, COMMON_TYPOS
-)
+from para_humanizer.utils.config_manager import get_config_manager
+from para_humanizer.utils.synonym_loader import SynonymLibrary
 from para_humanizer.utils.text_utils import is_protected_term
-from para_humanizer.utils.synonym_loader import get_synonym_library
-from para_humanizer.utils.synonym_learner import get_synonym_learner
 
 # Ensure necessary NLTK data is downloaded
 try:
@@ -25,9 +21,9 @@ try:
     nltk.data.find('taggers/averaged_perceptron_tagger')
     nltk.data.find('corpora/wordnet')
 except LookupError:
-    nltk.download('punkt')
-    nltk.download('averaged_perceptron_tagger')
-    nltk.download('wordnet')
+    nltk.download('punkt', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+    nltk.download('wordnet', quiet=True)
 
 # Load spaCy model
 try:
@@ -46,34 +42,68 @@ class RuleBasedProcessor:
     synonym replacement, sentence restructuring, and typo introduction.
     """
     
-    def __init__(self, enable_learning: bool = True):
+    def __init__(self, config_manager=None, synonym_library: Any = None, enable_learning: bool = True):
         """
         Initialize the rule-based processor with thread safety in mind.
         
         Args:
+            config_manager: ConfigManager instance with configuration settings
+            synonym_library: SynonymLibrary instance for synonym lookups
             enable_learning: Whether to enable automatic synonym learning
         """
         # Add lock for thread-safe WordNet access
-        self.wordnet_lock = threading.RLock()
-        self.tag_map = TAG_MAPPING
-        self.protected_terms = PROTECTED_TERMS
-        self.blacklist_words = BLACKLIST_WORDS
-        self.common_words = COMMON_WORDS
-        self.common_typos = COMMON_TYPOS
+        self.wordnet_lock = threading.Lock()
         
-        # Initialize synonym library
-        self.synonym_library = get_synonym_library(
-            blacklist_words=self.blacklist_words,
-            common_words=self.common_words
-        )
+        # Get the configuration manager
+        self.config_manager = config_manager if config_manager is not None else get_config_manager()
+        
+        # Use provided synonym library or create a default one
+        if synonym_library is None:
+            blacklist_words = set(self.config_manager.get_blacklist_words())
+            common_words = set(self.config_manager.get_set('common_words'))
+            from para_humanizer.utils.synonym_loader import get_synonym_library
+            self.synonym_library = get_synonym_library(blacklist_words, common_words)
+        else:
+            self.synonym_library = synonym_library
+        
+        # Load configuration data
+        self.common_words = set(self.config_manager.get_set('common_words'))
+        self.protected_terms = set(self.config_manager.get_protected_terms())
+        self.blacklist_words = set(self.config_manager.get_blacklist_words())
+        
+        # Load academic configuration
+        self.academic_protected_terms = set(self.config_manager.get_set('academic_protected_terms'))
+        self.academic_collocations = set(self.config_manager.get_set('academic_collocations'))
+        self.academic_terms = set(self.config_manager.get_set('academic_terms'))
+        self.academic_avoid = set(self.config_manager.get_set('academic_avoid'))
+        self.avoid_suffixes = set(self.config_manager.get_set('avoid_suffixes'))
+        self.avoid_prefixes = set(self.config_manager.get_set('avoid_prefixes'))
+        self.avoid_patterns = set(self.config_manager.get_set('avoid_patterns'))
+        
+        self.tag_mapping = self.config_manager.get_tag_mapping()
+        
+        # Thread safety for WordNet access
+        self.wordnet_lock = threading.Lock()
+        
+        # NLP model for dependency parsing
+        try:
+            import spacy
+            self.nlp = spacy.load("en_core_web_sm", disable=["ner"])
+        except:
+            print("Warning: Spacy model not available. Dependency parsing will be disabled.")
+            self.nlp = None
         
         # Initialize synonym learner if enabled
         self.enable_learning = enable_learning
-        self.synonym_learner = get_synonym_learner(self.synonym_library) if enable_learning else None
+        self.synonym_learner = None
+        
+        if enable_learning:
+            from para_humanizer.utils.synonym_learner import get_synonym_learner
+            self.synonym_learner = get_synonym_learner(self.synonym_library)
         
         # Batch text for learning to improve efficiency
         self.learning_batch = []
-        self.batch_size = 10
+        self.learning_batch_size = 10
         
     def get_wordnet_pos(self, nltk_tag: str) -> Optional[str]:
         """
@@ -85,7 +115,7 @@ class RuleBasedProcessor:
         Returns:
             WordNet POS tag or None if no mapping exists
         """
-        return self.tag_map.get(nltk_tag, None)
+        return self.tag_mapping.get(nltk_tag, None)
     
     def get_quality_synonyms(self, word: str, pos: str, context: str) -> List[str]:
         """
@@ -159,6 +189,304 @@ class RuleBasedProcessor:
         # Return up to 3 synonyms
         return synonyms[:3]
     
+    def process_text(self, text: str, rate: float = 0.4, tone: str = "casual") -> str:
+        """
+        Process input text with rule-based synonym replacement.
+        
+        Args:
+            text: The input text to process
+            rate: The rate of word replacement (0.0 to 1.0)
+            tone: The writing tone to use (casual, formal, academic)
+            
+        Returns:
+            Processed text
+        """
+        if tone == "academic":
+            return self.paraphrase_academic(text, rate)
+        elif tone == "formal":
+            return self.paraphrase_formal(text, rate)
+        else:
+            return self.paraphrase_text(text, rate)
+    
+    def paraphrase_academic(self, text: str, rate: float = 0.3) -> str:
+        """
+        Paraphrase academic text with specialized handling for technical and scientific terminology.
+        Uses stricter synonym selection and a lower effective replacement rate.
+        
+        Args:
+            text: The input text to paraphrase
+            rate: The base rate of word replacement (will be adjusted downward)
+            
+        Returns:
+            Academically-appropriate paraphrased text
+        """
+        # Use a more conservative replacement rate for academic text
+        effective_rate = max(0.2, rate * 0.7)  # Reduce replacement rate
+        
+        # Tokenize the text
+        sentences = nltk.sent_tokenize(text)
+        result_sentences = []
+        
+        for sentence in sentences:
+            # Skip very short sentences
+            if len(sentence.split()) < 3:
+                result_sentences.append(sentence)
+                continue
+                
+            # Tokenize and tag the words
+            tokens = nltk.word_tokenize(sentence)
+            tagged = nltk.pos_tag(tokens)
+            
+            # Initialize replacement array
+            replaced_tokens = tokens.copy()
+            
+            # Generate a protection mask for academic and technical terms
+            protected_mask = [False] * len(tokens)
+            
+            # Identify multi-word terms to protect
+            for i in range(len(tokens)):
+                # Check if this token starts a protected term
+                if is_protected_term(tokens[i], sentence, self.protected_terms):
+                    protected_mask[i] = True
+                    continue
+                
+                # Check if this is part of an academic term (exact match)
+                if tokens[i].lower() in self.academic_terms:
+                    protected_mask[i] = True
+                    continue
+                
+                # Protect capitalized words in academic contexts (likely proper nouns or specific terms)
+                if len(tokens[i]) > 1 and tokens[i][0].isupper() and tokens[i][1:].islower():
+                    protected_mask[i] = True
+                    continue
+            
+            # Track replaced word count
+            replaced_count = 0
+            max_replacements = int(len(tokens) * effective_rate)
+            tried_indices = set()
+            
+            # Attempt replacement until reaching the target rate
+            while replaced_count < max_replacements and len(tried_indices) < len(tokens):
+                # Choose a random word that hasn't been tried yet
+                available_indices = [i for i in range(len(tokens)) if i not in tried_indices]
+                if not available_indices:
+                    break
+                
+                idx = random.choice(available_indices)
+                tried_indices.add(idx)
+                
+                # Skip if this is a protected term
+                if protected_mask[idx]:
+                    continue
+                    
+                word = tokens[idx]
+                tag = tagged[idx][1]
+                
+                # Skip short words, stopwords, non-content words
+                if (len(word) < 4 or word.lower() in self.common_words or 
+                    not word.isalpha() or word.lower() in self.blacklist_words):
+                    continue
+                
+                # Get the WordNet POS tag
+                wordnet_pos = self.get_wordnet_pos(tag)
+                if not wordnet_pos:
+                    continue
+                
+                # Determine if we should replace this word based on rate
+                if random.random() < rate:
+                    # Get context for better synonym selection
+                    context_start = max(0, idx-3)
+                    context_end = min(len(tokens), idx+4)
+                    context = ' '.join(tokens[context_start:context_end])
+                    
+                    # Get quality synonyms and apply academic filtering
+                    synonyms = self.get_academic_synonyms(word, wordnet_pos, context)
+                    
+                    if synonyms:
+                        # Choose a synonym with preference for academic language
+                        synonym = random.choice(synonyms)
+                        
+                        # Handle capitalization
+                        if word[0].isupper():
+                            synonym = synonym[0].upper() + synonym[1:]
+                            
+                        replaced_tokens[idx] = synonym
+                        replaced_count += 1
+            
+            # Reconstruct the sentence
+            result = ' '.join(replaced_tokens)
+            
+            # Ensure proper spacing around punctuation
+            result = re.sub(r'\s+([.,;:!?)])', r'\1', result)
+            result = re.sub(r'([(])\s+', r'\1', result)
+            
+            result_sentences.append(result)
+            
+        # Join processed sentences
+        result_text = ' '.join(result_sentences)
+        
+        # Normalize whitespace
+        result_text = re.sub(r'\s+', ' ', result_text)
+        
+        return result_text
+    
+    def get_academic_synonyms(self, word: str, pos: str, context: str) -> List[str]:
+        """
+        Get appropriate synonyms for academic text with stricter quality control.
+        
+        Args:
+            word: The word to find synonyms for
+            pos: The part-of-speech tag (WordNet format)
+            context: The surrounding text for context
+            
+        Returns:
+            List of quality academic synonyms
+        """
+        word = word.lower()
+        
+        # Skip blacklisted words and common words more aggressively
+        if word in self.blacklist_words or word in self.common_words:
+            return []
+        
+        # Context-based academic term detection
+        # Check if the word appears in likely academic collocations
+        for term in self.academic_collocations:
+            if f"{word} {term}" in context or f"{term} {word}" in context:
+                return []  # Protect words that form academic phrases
+        
+        # Skip additional academic words
+        if word in self.academic_terms:
+            return []
+            
+        # First try the synonym library (preferred source)
+        library_synonyms = self.synonym_library.get_synonyms(word, max_count=3)
+        
+        # Filter library synonyms for academic appropriateness with higher standards
+        if library_synonyms:
+            academic_synonyms = [s for s in library_synonyms 
+                                if (s.lower() not in self.academic_avoid and 
+                                    not any(s.lower().endswith(suff) for suff in self.avoid_suffixes) and
+                                    len(s) >= len(word) - 1)]  # Avoid very short synonyms that might change meaning
+            if academic_synonyms:
+                # Further filter: compare lengths to avoid very different words
+                similar_length_synonyms = [s for s in academic_synonyms 
+                                        if abs(len(s) - len(word)) <= max(2, len(word) // 4)]
+                return similar_length_synonyms if similar_length_synonyms else academic_synonyms[:1]
+        
+        # Use thread-safe access to WordNet as fallback with strict academic filtering
+        synonyms = []
+        try:
+            with self.wordnet_lock:
+                # Use WordNet with stricter academic filtering
+                for syn in wordnet.synsets(word, pos=pos):
+                    # Only consider the first few synsets (most common meanings)
+                    if len(synonyms) >= 2:  # Stricter limit for academic text
+                        break
+                        
+                    for lemma in syn.lemmas():
+                        synonym = lemma.name().replace('_', ' ')
+                        synonym_lower = synonym.lower()
+                        
+                        # Apply academic quality filters
+                        if (synonym != word and 
+                            synonym_lower not in self.academic_avoid and
+                            synonym not in synonyms and 
+                            ' ' not in synonym and  # Single word only
+                            '-' not in synonym and  # Avoid hyphenated terms
+                            len(synonym) >= 3 and
+                            len(synonym) >= len(word) - 1 and  # Not much shorter than original
+                            len(synonym) <= len(word) + 2 and  # Not much longer than original
+                            not any(synonym.endswith(s) for s in self.avoid_suffixes) and  # Avoid casual suffixes
+                            not synonym.startswith(tuple(self.avoid_prefixes)) and  # Skip negations and modifiers
+                            synonym.isalpha()):  # Only alphabetic characters
+                            
+                            # Frequency check - prefer words that are neither too common nor too rare
+                            if not (synonym_lower in self.common_words):
+                                # Additional check - make sure synonym doesn't appear in academic avoid patterns
+                                if not any(avoid_term in synonym_lower for avoid_term in self.avoid_patterns):
+                                    synonyms.append(synonym)
+        except Exception as e:
+            print(f"WordNet error: {e}")
+            
+        return synonyms
+    
+    def paraphrase_formal(self, text: str, rate: float = 0.35) -> str:
+        """
+        Paraphrase formal text with a slightly more conservative approach.
+        
+        Args:
+            text: The input text to paraphrase
+            rate: The rate of word replacement (0.0 to 1.0)
+            
+        Returns:
+            Paraphrased text
+        """
+        # Tokenize the text
+        sentences = nltk.sent_tokenize(text)
+        result_sentences = []
+        
+        for sentence in sentences:
+            # Skip very short sentences
+            if len(sentence.split()) < 3:
+                result_sentences.append(sentence)
+                continue
+                
+            # Tokenize and tag the words
+            tokens = nltk.word_tokenize(sentence)
+            tagged = nltk.pos_tag(tokens)
+            
+            paraphrased_words = []
+            for i, (word, tag) in enumerate(tagged):
+                # Skip punctuation and small words
+                if tag in ['CC', 'DT', 'IN', '.', ',', ':', ';', "''", '""', '(', ')', '!', '?'] or len(word) < 4:
+                    paraphrased_words.append(word)
+                    continue
+                    
+                # Skip protected terms
+                if is_protected_term(word, sentence, self.protected_terms):
+                    paraphrased_words.append(word)
+                    continue
+                    
+                # Get the WordNet POS
+                wordnet_pos = self.get_wordnet_pos(tag)
+                if not wordnet_pos:
+                    paraphrased_words.append(word)
+                    continue
+                
+                # Determine if we should replace this word based on rate
+                if random.random() < rate:
+                    # Get context for better synonym selection
+                    context_start = max(0, i - 5)
+                    context_end = min(len(tokens), i + 5)
+                    context = ' '.join(tokens[context_start:context_end])
+                    
+                    # Get quality synonyms
+                    synonyms = self.get_quality_synonyms(word, wordnet_pos, context)
+                    
+                    if synonyms:
+                        # Choose a random synonym and maintain capitalization
+                        synonym = random.choice(synonyms)
+                        if word[0].isupper():
+                            synonym = synonym.capitalize()
+                        paraphrased_words.append(synonym)
+                    else:
+                        paraphrased_words.append(word)
+                else:
+                    paraphrased_words.append(word)
+            
+            # Reconstruct the sentence
+            paraphrased_sentence = self._reconstruct_sentence(paraphrased_words)
+            result_sentences.append(paraphrased_sentence)
+            
+        # Combine sentences
+        paraphrased_text = ' '.join(result_sentences)
+        
+        # Provide feedback to the learner about successful paraphrasing
+        if self.enable_learning and self.synonym_learner and paraphrased_text != text:
+            self.synonym_learner.provide_feedback(paraphrased_text, success=True)
+            
+        return paraphrased_text
+    
     def paraphrase_text(self, text: str, rate: float = 0.3, humanize: bool = False) -> str:
         """
         Paraphrase text using rule-based synonym replacement.
@@ -176,7 +504,7 @@ class RuleBasedProcessor:
             self.learning_batch.append(text)
             
             # Process in batches for efficiency
-            if len(self.learning_batch) >= self.batch_size:
+            if len(self.learning_batch) >= self.learning_batch_size:
                 self._process_learning_batch()
         
         # Tokenize the text
@@ -244,6 +572,65 @@ class RuleBasedProcessor:
             self.synonym_learner.provide_feedback(paraphrased_text, success=True)
             
         return paraphrased_text
+    
+    def should_preserve_word(self, word: str, pos: str, text: str, academic: bool = False) -> bool:
+        """
+        Determine if a word should be preserved (not paraphrased).
+        
+        Args:
+            word: Word to check
+            pos: Part of speech tag
+            text: Full text context
+            academic: Whether this is academic text
+            
+        Returns:
+            True if the word should be preserved, False otherwise
+        """
+        # Skip very short words as these are often particles or function words
+        if len(word) <= 2:
+            return True
+            
+        # Always preserve proper nouns
+        if pos.startswith('NNP'):
+            return True
+            
+        # Skip common words unless forced replacement
+        word_lower = word.lower()
+        if word_lower in self.common_words:
+            return random.random() > 0.1  # Occasionally replace common words
+            
+        # Always preserve protected terms
+        if is_protected_term(word, text, self.protected_terms) or word_lower in self.protected_terms:
+            return True
+            
+        # For academic text, preserve academic terminology
+        if academic:
+            # Check whether word is in academic protected terms
+            if word_lower in self.academic_protected_terms:
+                return True
+                
+            # Check if word is part of a multiword protected term
+            # This helps preserve terms like "quantum mechanics" even if we just see "quantum"
+            for term in self.academic_protected_terms:
+                if " " in term and word_lower in term.split():
+                    if term in text.lower():
+                        return True
+                        
+            # Special handling for domain-specific terms that should be preserved in academic writing
+            if pos.startswith('N') and word_lower not in self.academic_avoid:
+                # Preserve most nouns in academic text since they're likely field-specific terms
+                if len(word) > 3 and word_lower not in self.academic_avoid:
+                    return True
+            
+            # Protect stems of academic collocations
+            for collocation in self.academic_collocations:
+                parts = collocation.split()
+                if word_lower in parts:
+                    # If the full collocation appears in the text, protect this word
+                    if collocation in text.lower():
+                        return True
+        
+        return False
     
     def _process_learning_batch(self) -> None:
         """Process the accumulated batch of texts for learning."""
@@ -428,20 +815,20 @@ class RuleBasedProcessor:
             
             # Skip protected words and blacklisted terms
             if (word_lower in protected_words or 
-                is_protected_term(word_lower, text, self.protected_terms) or
+                is_protected_term(word, text, self.protected_terms) or
                 word_lower in self.blacklist_words):
                 result.append(word)
                 continue
                 
             # Skip short words, punctuation, proper nouns
-            if (len(word) <= 3 or 
-                not word.isalpha() or 
+            if (len(word) < 4 or 
+                not word.isalnum() or 
                 tag.startswith('NNP')):
                 result.append(word)
                 continue
                 
-            # Get WordNet POS
-            wordnet_pos = self.get_wordnet_pos(tag)
+            # Get the WordNet POS tag
+            wordnet_pos = get_wordnet_pos(tag)
             if not wordnet_pos or random.random() > replacement_rate:
                 # Consider introducing a typo instead
                 result.append(self.introduce_typo(word, typo_rate))
@@ -733,3 +1120,106 @@ class RuleBasedProcessor:
         paraphrased = ' '.join(restructured)
         
         return paraphrased
+
+    def paraphrase_academic(self, text: str, rate: float = 0.3) -> str:
+        """
+        Paraphrase academic text with specialized handling for technical and scientific terminology.
+        Uses stricter synonym selection and a lower effective replacement rate.
+        
+        Args:
+            text: The input text to paraphrase
+            rate: The base rate of word replacement (will be adjusted downward)
+            
+        Returns:
+            Academically-appropriate paraphrased text
+        """
+        # Use a more conservative replacement rate for academic text
+        effective_rate = max(0.2, rate * 0.7)  # Reduce replacement rate
+        
+        # Tokenize the text
+        sentences = nltk.sent_tokenize(text)
+        result_sentences = []
+        
+        for sentence in sentences:
+            # Skip very short sentences
+            if len(sentence.split()) < 3:
+                result_sentences.append(sentence)
+                continue
+                
+            # Tokenize and tag the words
+            tokens = nltk.word_tokenize(sentence)
+            tagged = nltk.pos_tag(tokens)
+            
+            # Initialize replacement array
+            replaced_tokens = tokens.copy()
+            
+            # Track replaced word count
+            replaced_count = 0
+            max_replacements = int(len(tokens) * effective_rate)
+            tried_indices = set()
+            
+            # Attempt replacement until reaching the target rate
+            while replaced_count < max_replacements and len(tried_indices) < len(tokens):
+                # Choose a random word that hasn't been tried yet
+                available_indices = [i for i in range(len(tokens)) if i not in tried_indices]
+                if not available_indices:
+                    break
+                
+                idx = random.choice(available_indices)
+                tried_indices.add(idx)
+                
+                # Skip if this is a protected term
+                word = tokens[idx]
+                tag = tagged[idx][1]
+                
+                # Skip short words, stopwords, non-content words
+                if (len(word) < 4 or word.lower() in self.common_words or 
+                    not word.isalpha() or word.lower() in self.blacklist_words):
+                    continue
+                
+                # Check if we should preserve this word based on academic context
+                if self.should_preserve_word(word, tag, sentence, academic=True):
+                    continue
+                
+                # Get the WordNet POS tag
+                wordnet_pos = self.get_wordnet_pos(tag)
+                if not wordnet_pos:
+                    continue
+                
+                # Determine if we should replace this word based on rate
+                if random.random() < rate:
+                    # Get context for better synonym selection
+                    context_start = max(0, idx-3)
+                    context_end = min(len(tokens), idx+4)
+                    context = ' '.join(tokens[context_start:context_end])
+                    
+                    # Get quality synonyms and apply academic filtering
+                    synonyms = self.get_academic_synonyms(word, wordnet_pos, context)
+                    
+                    if synonyms:
+                        # Choose a synonym with preference for academic language
+                        synonym = random.choice(synonyms)
+                        
+                        # Handle capitalization
+                        if word[0].isupper():
+                            synonym = synonym[0].upper() + synonym[1:]
+                            
+                        replaced_tokens[idx] = synonym
+                        replaced_count += 1
+            
+            # Reconstruct the sentence
+            result = ' '.join(replaced_tokens)
+            
+            # Ensure proper spacing around punctuation
+            result = re.sub(r'\s+([.,;:!?)])', r'\1', result)
+            result = re.sub(r'([(])\s+', r'\1', result)
+            
+            result_sentences.append(result)
+            
+        # Join processed sentences
+        result_text = ' '.join(result_sentences)
+        
+        # Normalize whitespace
+        result_text = re.sub(r'\s+', ' ', result_text)
+        
+        return result_text

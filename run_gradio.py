@@ -41,76 +41,58 @@ def paraphrase_text(
     humanize=True,
     humanize_intensity=0.5,
     typo_rate=0.01,
-    preserve_structure=True
+    preserve_structure=True,
+    tone="casual"
 ):
     """Process text with the paraphraser using provided parameters."""
+    global paraphraser_instance
+    
     if not text.strip():
         return "Please enter some text to paraphrase.", ""
     
     try:
         # Get parameters either from intelligent selection or manual input
         if use_intelligent_params:
-            # Analyze text to determine optimal parameters
-            analysis_results = text_analyzer.analyze(text)
+            # Get content-optimized parameters using analyzer
+            suggested_params = text_analyzer.analyze(text)
+            rule_based_rate = suggested_params.get("rule_based_rate", rule_based_rate)
+            humanize_intensity = suggested_params.get("humanize_intensity", humanize_intensity)
             
-            # Map the returned keys from the analyze method to our expected keys
-            effective_rule_based = analysis_results["rule_based_rate"]
-            effective_transformer = analysis_results["transformer_rate"]
-            effective_humanize = True  # Default to True as the analyze method doesn't return this
-            effective_humanize_intensity = analysis_results["humanize_intensity"]
-            effective_typo_rate = analysis_results["typo_rate"]
-            
-            # Build parameters description
-            params_description = f"""
-            ### Intelligent Parameter Selection
-            Based on analysis of your text:
-            
-            * Word count: {len(text.split())}
-            
-            **Applied parameters:**
-            * Rule-based rate: {effective_rule_based:.2f}
-            * Transformer rate: {effective_transformer:.2f}
-            * Humanize: {"Yes" if effective_humanize else "No"}
-            * Humanize intensity: {effective_humanize_intensity:.2f}
-            * Typo rate: {effective_typo_rate:.3f}
-            * Preserve structure: {"Yes" if preserve_structure else "No"}
-            """
-        else:
-            # Use manually specified parameters
-            effective_rule_based = rule_based_rate
-            effective_transformer = transformer_rate
-            effective_humanize = humanize
-            effective_humanize_intensity = humanize_intensity
-            effective_typo_rate = typo_rate
-            
-            # Build parameters description
-            params_description = f"""
-            ### Manual Parameter Selection
-            
-            **Applied parameters:**
-            * Rule-based rate: {effective_rule_based:.2f}
-            * Transformer rate: {effective_transformer:.2f}
-            * Humanize: {"Yes" if effective_humanize else "No"}
-            * Humanize intensity: {effective_humanize_intensity:.2f}
-            * Typo rate: {effective_typo_rate:.3f}
-            * Preserve structure: {"Yes" if preserve_structure else "No"}
-            """
+            # Academic/formal text detection - use academic tone for formal documents
+            if suggested_params.get("academic_text", False) and tone == "casual":
+                tone = "academic"
+                preserve_structure = True
         
-        # Process the text with the paraphraser
-        paraphrased = paraphraser_instance.paraphrase(
-            text,
-            rule_based_rate=effective_rule_based,
-            transformer_rate=effective_transformer,
-            humanize=effective_humanize,
-            humanize_intensity=effective_humanize_intensity,
-            typo_rate=effective_typo_rate,
-            preserve_structure=preserve_structure
+        # Process the text with the selected parameters
+        result = paraphraser_instance.paraphrase(
+            text=text,
+            rule_based_rate=rule_based_rate,
+            transformer_rate=transformer_rate,
+            humanize=humanize,
+            humanize_intensity=humanize_intensity,
+            typo_rate=typo_rate,
+            no_parallel=False,
+            preserve_structure=preserve_structure,
+            tone=tone
         )
         
-        return paraphrased, params_description
+        # Generate a parameters summary for display
+        params_used = f"""
+        Parameters used:
+        - Rule-based rate: {rule_based_rate:.2f}
+        - Transformer rate: {transformer_rate:.2f}
+        - Humanize: {"Yes" if humanize else "No"}
+        - Humanize intensity: {humanize_intensity:.2f}
+        - Typo rate: {typo_rate:.3f}
+        - Preserve structure: {"Yes" if preserve_structure else "No"}
+        - Tone: {tone.capitalize()}
+        """
+        
+        return result, params_used
+    
     except Exception as e:
-        logger.error(f"Error in paraphrasing: {e}", exc_info=True)
-        return f"Error: {str(e)}", "An error occurred during paraphrasing."
+        logger.error(f"Error in paraphrasing: {str(e)}", exc_info=True)
+        return f"Error: {str(e)}", "Error occurred during processing."
 
 def create_gradio_interface(paraphraser):
     """Create the Gradio web interface."""
@@ -231,6 +213,15 @@ def create_gradio_interface(paraphraser):
                         info="Maintain original formatting, bullet points, and paragraph structure"
                     )
                 
+                # Writing Tone selector (moved outside of advanced parameters)
+                with gr.Row():
+                    tone_selector = gr.Radio(
+                        label="Writing Tone",
+                        choices=["casual", "formal", "academic"],
+                        value="casual",
+                        info="Select writing style for paraphrased output"
+                    )
+                
                 # Advanced parameters (hidden by default when intelligent selection is enabled)
                 with gr.Accordion("Advanced Parameters", open=False) as advanced_params:
                     with gr.Row():
@@ -307,7 +298,8 @@ def create_gradio_interface(paraphraser):
                 humanize_check,
                 humanize_slider,
                 typo_slider,
-                preserve_structure_check
+                preserve_structure_check,
+                tone_selector
             ],
             outputs=[output_text, params_text]
         )

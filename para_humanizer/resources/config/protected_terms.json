@@ -18,6 +18,35 @@
     "aws", "azure", "gcp", "cloud", "serverless", "docker", "kubernetes", "container",
     "git", "github", "gitlab", "bitbucket", "version control", "ci/cd", "devops",
     "linux", "windows", "macos", "ios", "android", "operating system", "os",
-    "para-humanizer"
+    "para-humanizer",
+    
+    "quantum mechanics", "quantum physics", "quantum theory", "quantum field theory",
+    "particle physics", "theoretical physics", "blackbody radiation", "photoelectric effect", 
+    "wave-particle duality", "uncertainty principle", "entanglement", "superposition",
+    "wavefunction", "quantum state", "quantum computation", "quantum teleportation",
+    "quantum cryptography", "quantum information", "double-slit experiment",
+    
+    "mathematical", "theorem", "axiom", "postulate", "corollary", "lemma", "proof",
+    "algorithm", "computation", "formal logic", "set theory", "number theory",
+    "calculus", "differential equation", "statistics", "probability", "regression",
+    "vector", "matrix", "tensor", "topology", "geometry", "algebra", "analysis",
+    
+    "regression analysis", "correlation coefficient", "p value", "statistical significance",
+    "coefficient of determination", "r squared", "eigenvalue", "eigenvalues", "variance",
+    "dataset", "factor analysis", "component", "components", "variable", "variables",
+    "standard deviation", "mean", "median", "mode", "distribution", "normal distribution",
+    "t-test", "chi-square", "confidence interval", "null hypothesis", "alternative hypothesis",
+    "sample size", "power analysis", "effect size", "statistical power", "parametric",
+    "non-parametric", "dependent variable", "independent variable", "control variable",
+    
+    "methodology", "mixed-methods", "quantitative", "qualitative", "surveys", "interviews",
+    "sample", "sampling", "random sampling", "stratified sampling", "cluster sampling",
+    "longitudinal", "cross-sectional", "experimental", "quasi-experimental", "control group",
+    "treatment group", "blind study", "double-blind", "pilot study", "field study",
+    "laboratory experiment", "observational study", "case study", "ethnography",
+    
+    "epistemology", "ontology", "metaphysics", "ethics", "aesthetics", "phenomenology",
+    "existentialism", "empiricism", "rationalism", "materialism", "idealism", "realism",
+    "determinism", "free will", "consciousness", "perception", "cognition"
   ]
 }

@@ -26,6 +26,61 @@ CONNECTORS = config_manager.get_connectors()
 # Technical terms and phrases that shouldn't be paraphrased
 PROTECTED_TERMS = config_manager.get_protected_terms()
 
+# Add specialized academic and scientific terms
+ACADEMIC_PROTECTED_TERMS = set([
+    # Physics and Quantum Mechanics
+    "quantum mechanics", "quantum physics", "quantum theory", "quantum field theory",
+    "particle physics", "theoretical physics", "blackbody radiation", "photoelectric effect", 
+    "wave-particle duality", "uncertainty principle", "entanglement", "superposition",
+    "wavefunction", "quantum state", "quantum computation", "quantum teleportation",
+    "quantum cryptography", "quantum information", "double-slit experiment",
+    "electron", "electrons", "atom", "atoms", "molecule", "molecules", "particle", "particles",
+    "wave", "waves", "orbit", "orbits", "three-dimensional", "bohr model",
+    
+    # Math and Logic
+    "mathematical", "theorem", "axiom", "postulate", "corollary", "lemma", "proof",
+    "algorithm", "computation", "formal logic", "set theory", "number theory",
+    "calculus", "differential equation", "statistics", "probability", "regression",
+    "vector", "matrix", "tensor", "topology", "geometry", "algebra", "analysis",
+    
+    # Statistics and Research
+    "regression analysis", "correlation coefficient", "p value", "statistical significance",
+    "coefficient of determination", "r squared", "eigenvalue", "eigenvalues", "variance",
+    "dataset", "factor analysis", "component", "components", "variable", "variables",
+    "standard deviation", "mean", "median", "mode", "distribution", "normal distribution",
+    "statistical", "statistically", "multivariate", "univariate", "anova", "manova",
+    "t-test", "chi-square", "confidence interval", "null hypothesis", "alternative hypothesis",
+    "sample size", "power analysis", "effect size", "statistical power", "parametric",
+    "non-parametric", "dependent variable", "independent variable", "control variable",
+    
+    # Research Methods
+    "methodology", "mixed-methods", "quantitative", "qualitative", "surveys", "interviews",
+    "sample", "sampling", "random sampling", "stratified sampling", "cluster sampling",
+    "longitudinal", "cross-sectional", "experimental", "quasi-experimental", "control group",
+    "treatment group", "blind study", "double-blind", "pilot study", "field study",
+    "laboratory experiment", "observational study", "case study", "ethnography",
+    "grounded theory", "phenomenology", "content analysis", "discourse analysis",
+    
+    # Software and Tools
+    "spss", "r", "python", "matlab", "sas", "stata", "nvivo", "atlas.ti", "software", "version",
+    
+    # Philosophy
+    "epistemology", "ontology", "metaphysics", "ethics", "aesthetics", "phenomenology",
+    "existentialism", "empiricism", "rationalism", "materialism", "idealism", "realism",
+    "determinism", "free will", "consciousness", "perception", "cognition",
+    
+    # Academic Process
+    "methodology", "hypothesis", "theory", "experiment", "observation", "empirical",
+    "qualitative", "quantitative", "analysis", "synthesis", "conclusion", "abstract",
+    "literature review", "case study", "meta-analysis", "correlation", "causation",
+    "peer review", "publication", "journal", "citation", "reference", "bibliography",
+    "research", "researcher", "researchers", "discourse", "academic", "theoretical", "framework",
+    "approach", "evidence", "data", "empirical data", "rigor", "methodological rigor"
+])
+
+# Extend protected terms with academic terms
+PROTECTED_TERMS.update(ACADEMIC_PROTECTED_TERMS)
+
 # Words to avoid replacing due to common bad replacements
 BLACKLIST_WORDS = config_manager.get_blacklist_words()
 
@@ -196,3 +251,17 @@ def get_typo_for_char(char: str) -> str:
     
     # Keep original character
     return char
+
+class ConfigManager:
+    def _load_default_configs(self):
+        """Load all default configuration files from the config directory."""
+        config_files = [
+            'default.json',
+            'protected_terms.json',
+            'blacklist_words.json',
+            'fillers.json',
+            'connectors.json',
+            'sentence_structures.json',
+            'academic_terms.json'  # Add academic terms config
+        ]
+        # Rest of the function remains the same

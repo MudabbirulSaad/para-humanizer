@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Academic and scientific terms for proper academic paraphrasing",
+    "date_updated": "2025-03-14"
+  },
+  "academic_protected_terms": [
+    "quantum mechanics", "quantum physics", "quantum theory", "quantum field theory",
+    "particle physics", "theoretical physics", "blackbody radiation", "photoelectric effect", 
+    "wave-particle duality", "uncertainty principle", "entanglement", "superposition",
+    "wavefunction", "quantum state", "quantum computation", "quantum teleportation",
+    "quantum cryptography", "quantum information", "double-slit experiment",
+    "electron", "electrons", "atom", "atoms", "molecule", "molecules", "particle", "particles",
+    "wave", "waves", "orbit", "orbits", "three-dimensional", "bohr model",
+    
+    "mathematical", "theorem", "axiom", "postulate", "corollary", "lemma", "proof",
+    "algorithm", "computation", "formal logic", "set theory", "number theory",
+    "calculus", "differential equation", "statistics", "probability", "regression",
+    "vector", "matrix", "tensor", "topology", "geometry", "algebra", "analysis",
+    
+    "regression analysis", "correlation coefficient", "p value", "statistical significance",
+    "coefficient of determination", "r squared", "eigenvalue", "eigenvalues", "variance",
+    "dataset", "factor analysis", "component", "components", "variable", "variables",
+    "standard deviation", "mean", "median", "mode", "distribution", "normal distribution",
+    "statistical", "statistically", "multivariate", "univariate", "anova", "manova",
+    "t-test", "chi-square", "confidence interval", "null hypothesis", "alternative hypothesis",
+    "sample size", "power analysis", "effect size", "statistical power", "parametric",
+    "non-parametric", "dependent variable", "independent variable", "control variable",
+    
+    "methodology", "mixed-methods", "quantitative", "qualitative", "surveys", "interviews",
+    "sample", "sampling", "random sampling", "stratified sampling", "cluster sampling",
+    "longitudinal", "cross-sectional", "experimental", "quasi-experimental", "control group",
+    "treatment group", "blind study", "double-blind", "pilot study", "field study",
+    "laboratory experiment", "observational study", "case study", "ethnography",
+    "grounded theory", "phenomenology", "content analysis", "discourse analysis",
+    
+    "spss", "r", "python", "matlab", "sas", "stata", "nvivo", "atlas.ti", "software", "version",
+    
+    "epistemology", "ontology", "metaphysics", "ethics", "aesthetics", "phenomenology",
+    "existentialism", "empiricism", "rationalism", "materialism", "idealism", "realism",
+    "determinism", "free will", "consciousness", "perception", "cognition",
+    
+    "methodology", "hypothesis", "theory", "experiment", "observation", "empirical",
+    "qualitative", "quantitative", "analysis", "synthesis", "conclusion", "abstract",
+    "literature review", "case study", "meta-analysis", "correlation", "causation",
+    "peer review", "publication", "journal", "citation", "reference", "bibliography",
+    "research", "researcher", "researchers", "discourse", "academic", "theoretical", "framework",
+    "approach", "evidence", "data", "empirical data", "rigor", "methodological rigor",
+    
+    "model", "models", "modeling", "modelling", "paradigm", "framework", "structure", 
+    "system", "systems", "function", "functions", "mechanism", "mechanisms", 
+    "process", "processes", "procedure", "procedures", "method", "methods",
+    "technique", "techniques", "approach", "approaches", "strategy", "strategies",
+    
+    "context", "contexts", "perspective", "perspectives", "dimension", "dimensions",
+    "factor", "factors", "aspect", "aspects", "element", "elements", "parameter", "parameters",
+    
+    "concept", "concepts", "construct", "constructs", "principle", "principles",
+    "theory", "theories", "hypothesis", "hypotheses", "assumption", "assumptions",
+    "premise", "premises", "proposition", "propositions", "postulate", "postulates",
+    
+    "result", "results", "finding", "findings", "outcome", "outcomes", "conclusion", "conclusions",
+    "implication", "implications", "significance", "impact", "impacts", "effect", "effects",
+    "consequence", "consequences", "influence", "influences", "correlation", "correlations",
+    "relationship", "relationships", "association", "associations", "connection", "connections",
+    
+    "data", "datum", "evidence", "information", "knowledge", "facts", "statistics",
+    "measurement", "measurements", "metric", "metrics", "indicator", "indicators",
+    "value", "values", "quantity", "quantities", "figure", "figures", "ratio", "ratios",
+    
+    "analysis", "analyses", "evaluation", "evaluations", "assessment", "assessments",
+    "examination", "examinations", "investigation", "investigations", "exploration", "explorations",
+    "study", "studies", "review", "reviews", "survey", "surveys", "observation", "observations",
+    
+    "criteria", "criterion", "standard", "standards", "benchmark", "benchmarks",
+    "threshold", "thresholds", "guideline", "guidelines", "protocol", "protocols",
+    "requirement", "requirements", "specification", "specifications", "constraint", "constraints",
+    
+    "validation", "verification", "corroboration", "confirmation", "substantiation",
+    "consistency", "reliability", "validity", "accuracy", "precision", "robustness",
+    "generalizability", "applicability", "reproducibility", "replicability"
+  ],
+  "academic_collocations": [
+    "research", "study", "analysis", "theory", "model", "framework", "approach", 
+    "methodology", "data", "results", "findings", "evidence", "literature", 
+    "empirical", "theoretical", "conceptual", "statistical", "experiment",
+    "quantitative", "qualitative", "significant", "variable", "coefficient",
+    "correlation", "factor", "component", "variance", "hypothesis", "thesis"
+  ],
+  "academic_terms": [
+    "behavior", "behaviour", "method", "procedure", "process", "technique",
+    "concept", "principle", "condition", "function", "structure", "system",
+    "theory", "model", "design", "pattern", "mechanism", "interaction",
+    "relationship", "association", "connection", "influence", "impact",
+    "effect", "result", "outcome", "consequence", "implication", "conclusion",
+    "energy", "matter", "material", "substance", "element", "compound",
+    "property", "characteristic", "attribute", "feature", "aspect", "dimension",
+    "strategy", "method", "approach", "perspective", "viewpoint", "stance",
+    "position", "argument", "reasoning", "logic", "rationale", "justification",
+    "hypothesis", "assumption", "premise", "proposition", "inference"
+  ],
+  "academic_avoid": [
+    "stuff", "thing", "kinda", "sorta", "lots", "plenty", "heaps", 
+    "huge", "massive", "awesome", "amazing", "great", "good", "bad",
+    "nice", "nasty", "pretty", "lovely", "okay", "ok", "fine", "super",
+    "fab", "fabulous", "terrific", "terrible", "horrible", "wonderful",
+    "fantastic", "cool", "hot", "big", "small", "tiny", "large", "bit", 
+    "really", "very", "quite", "somewhat", "rather", "fairly", "actually",
+    "basically", "literally", "simply", "essentially", "totally", "completely",
+    "absolutely", "definitely", "certainly", "probably", "possibly", "maybe",
+    "perhaps", "supposedly", "seemingly", "apparently", "arguably", "clearly",
+    "obviously", "evidently", "naturally", "undoubtedly", "presumably",
+    "like", "kind of", "sort of", "type of", "way", "means", "bunch",
+    "load", "ton", "plenty", "majority", "minority", "bulk", "mass",
+    "crazy", "insane", "wild", "weird", "strange", "odd", "unusual",
+    "normal", "regular", "ordinary", "average", "typical", "standard"
+  ],
+  "avoid_suffixes": [
+    "ey", "ish", "y", "ie", "ies", "esque", "ine"
+  ],
+  "avoid_prefixes": [
+    "un", "non", "anti", "pseudo"
+  ],
+  "avoid_patterns": [
+    "thing", "thingy", "stuff", "like"
+  ]
+}

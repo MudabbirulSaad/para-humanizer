@@ -10,7 +10,7 @@ import sys
 
 def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0, 
                     humanize=True, humanize_intensity=0.5, typo_rate=0.0,
-                    use_intelligent_params=False, preserve_structure=True):
+                    use_intelligent_params=False, preserve_structure=True, tone="casual"):
     """
     Send a paraphrase request to the API.
     
@@ -24,6 +24,7 @@ def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0,
         typo_rate: Rate of introducing typos (0.0 to 1.0)
         use_intelligent_params: Whether to use intelligent parameter selection
         preserve_structure: Whether to preserve the original document structure
+        tone: Writing tone style to use (casual, formal, academic)
         
     Returns:
         Paraphrased text if successful, None otherwise
@@ -48,7 +49,8 @@ def paraphrase_text(api_url, text, rule_based_rate=0.4, transformer_rate=0.0,
         "humanize_intensity": humanize_intensity,
         "typo_rate": typo_rate,
         "no_parallel": False,
-        "preserve_structure": preserve_structure
+        "preserve_structure": preserve_structure,
+        "tone": tone
     }
     
     try:
@@ -135,6 +137,13 @@ def main():
         action="store_true",
         help="Preserve the original document structure"
     )
+    parser.add_argument(
+        "--tone", 
+        type=str,
+        choices=["casual", "formal", "academic"],
+        default="casual",
+        help="Writing tone style to use (casual, formal, academic)"
+    )
     
     args = parser.parse_args()
     
@@ -158,7 +167,8 @@ def main():
         result = paraphrase_text(
             api_url=args.url,
             text=input_text,
-            use_intelligent_params=True
+            use_intelligent_params=True,
+            tone=args.tone
         )
     else:
         result = paraphrase_text(
@@ -170,7 +180,8 @@ def main():
             humanize_intensity=args.humanize_intensity,
             typo_rate=args.typo_rate,
             use_intelligent_params=False,
-            preserve_structure=args.preserve_structure
+            preserve_structure=args.preserve_structure,
+            tone=args.tone
         )
     
     # Print the result

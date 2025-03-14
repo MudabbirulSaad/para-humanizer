@@ -46,7 +46,8 @@ class TextAnalyzer:
                 "rule_based_rate": 0.4,
                 "transformer_rate": 0.0,
                 "humanize_intensity": 0.5,
-                "typo_rate": 0.01
+                "typo_rate": 0.01,
+                "academic_text": False
             }
             
         # Get text metrics
@@ -91,6 +92,21 @@ class TextAnalyzer:
         formality_matches = sum(1 for word in words if word.lower() in formality_indicators)
         formality_level = min(1.0, formality_matches / max(10, len(sentences)))
         
+        # Check for academic writing indicators
+        academic_indicators = [
+            'analyze', 'analysis', 'argue', 'argument', 'concept', 'conclude', 'conclusion',
+            'data', 'define', 'definition', 'demonstrate', 'develop', 'emphasize', 'empirical',
+            'establish', 'estimate', 'evaluate', 'evidence', 'examine', 'focus', 'framework',
+            'hypothesis', 'identify', 'implement', 'implication', 'indicate', 'individual',
+            'interpret', 'literature', 'methodology', 'obtain', 'participate', 'perceive',
+            'procedure', 'process', 'research', 'resolve', 'resource', 'respond', 'role',
+            'section', 'significant', 'similar', 'source', 'specific', 'structure', 'theory',
+            'variable', 'whereas', 'abstract', 'investigation', 'subsequently', 'postulate',
+            'paradigm', 'via', 'utilize', 'optimal', 'methodology', 'preliminary', 'phenomenon'
+        ]
+        academic_matches = sum(1 for word in words if word.lower() in academic_indicators)
+        academic_level = min(1.0, academic_matches / max(15, len(sentences)))
+        
         # Check for technical content
         technical_indicators = ['data', 'analysis', 'system', 'process', 'function',
                                'method', 'algorithm', 'implementation', 'interface',
@@ -104,6 +120,7 @@ class TextAnalyzer:
             'lexical_diversity': lexical_diversity,
             'punctuation_rate': punctuation_rate,
             'formality_level': formality_level,
+            'academic_level': academic_level,
             'technical_level': technical_level,
             'text_length': len(text)
         }
@@ -123,7 +140,8 @@ class TextAnalyzer:
             'rule_based_rate': 0.4,
             'transformer_rate': 0.0,
             'humanize_intensity': 0.5,
-            'typo_rate': 0.01
+            'typo_rate': 0.01,
+            'academic_text': False
         }
         
         # Adjust rule_based_rate based on lexical diversity and formality
@@ -149,13 +167,15 @@ class TextAnalyzer:
         
         # Adjust humanize_intensity based on formality
         # More formal = less humanization
-        params['humanize_intensity'] = min(0.8, max(0.3, 
-            0.7 * (1.0 - metrics['formality_level'])))
+        humanize_factor = 1.0 - (metrics['formality_level'] * 0.6)
+        params['humanize_intensity'] = max(0.2, min(0.7, 0.5 * humanize_factor))
         
-        # Adjust typo_rate based on formality (formal = fewer typos)
-        # We keep typos very minimal in all cases
-        typo_base = 0.01 if metrics['formality_level'] > 0.4 else 0.02
-        params['typo_rate'] = min(0.03, max(0.005, typo_base * (1.0 - metrics['formality_level'])))
+        # Set typo_rate lower for formal content
+        if metrics['formality_level'] > 0.3:
+            params['typo_rate'] = max(0.0, min(0.005, 0.01 - metrics['formality_level'] * 0.01))
+        
+        # Detect academic text and set a flag
+        params['academic_text'] = metrics['academic_level'] > 0.3 or metrics['formality_level'] > 0.5
         
         return params
 
